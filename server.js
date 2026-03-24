@@ -52,6 +52,32 @@ app.get('/avaliacoes', (req, res) => {
     });
 });
 
+// Rota para ir buscar todos os Médicos
+app.get('/medicos', (req, res) => {
+    const sql = 'SELECT * FROM Medico';
+    
+    db.all(sql, [], (err, rows) => {
+        if (err) {
+            res.status(500).json({ erro: err.message });
+            return;
+        }
+        res.json({ medicos: rows });
+    });
+});
+
+// Rota para ir buscar todos os Sintomas
+app.get('/sintomas', (req, res) => {
+    const sql = 'SELECT * FROM Sintoma';
+    
+    db.all(sql, [], (err, rows) => {
+        if (err) {
+            res.status(500).json({ erro: err.message });
+            return;
+        }
+        res.json({ sintomas: rows });
+    });
+});
+
 // Ligar o Servidor
 app.listen(porta, () => {
     console.log(`🚀 Servidor a correr na porta http://localhost:${porta}`);

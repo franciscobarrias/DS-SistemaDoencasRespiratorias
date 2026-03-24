@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clínica SaudINOB</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; background-color: #f4f7f6; }
+        h1 { color: #2c3e50; }
+        button { padding: 10px 15px; font-size: 16px; background-color: #3498db; color: white; border: none; border-radius: 5px; cursor: pointer; }
+        button:hover { background-color: #2980b9; }
+        ul { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        li { margin-bottom: 10px; font-size: 18px; list-style-type: none; border-bottom: 1px solid #eee; padding-bottom: 10px; }
+    </style>
+</head>
+<body>
+
+    <h1>Bem-vindo à Clínica SaudINOB 🩺</h1>
+    <button onclick="carregarUtentes()">Carregar Lista de Utentes</button>
+    
+    <ul id="lista-utentes"></ul>
+
+    <br><br> <h2>Resultados Clínicos 📊</h2>
+    <button onclick="carregarAvaliacoes()" style="background-color: #27ae60;">Carregar Avaliações CARAT</button>
+    
+    <ul id="lista-avaliacoes"></ul>
+
+    <br><br>
+    <h2>Equipa Médica 👨‍⚕️👩‍⚕️</h2>
+    <button onclick="carregarMedicos()" style="background-color: #8e44ad;">Carregar Equipa Médica</button>
+    <ul id="lista-medicos"></ul>
+
+    <br><br>
+    <h2>Sintomas Registados 🤧</h2>
+    <button onclick="carregarSintomas()" style="background-color: #e67e22;">Carregar Sintomas</button>
+    <ul id="lista-sintomas"></ul>
+
+    <script>
+        // Esta função vai bater à porta do teu Servidor!
+        function carregarUtentes() {
+            fetch('http://localhost:3000/utentes')
+                .then(resposta => resposta.json())
+                .then(dados => {
+                    const lista = document.getElementById('lista-utentes');
+                    lista.innerHTML = ''; // Limpa a lista antes de adicionar novos
+                    
+                    // Para cada utente, cria uma linha na lista
+                    dados.utentes.forEach(utente => {
+                        const item = document.createElement('li');
+                        item.innerHTML = `<strong>${utente.nome}</strong> <br> 📧 ${utente.email} | 📞 ${utente.telefone}`;
+                        lista.appendChild(item);
+                    });
+                })
+                .catch(erro => console.error('Erro ao buscar dados:', erro));
+        }
+
+        // Função para ir buscar as avaliações CARAT
+        function carregarAvaliacoes() {
+            fetch('http://localhost:3000/avaliacoes')
+                .then(resposta => resposta.json())
+                .then(dados => {
+                    const lista = document.getElementById('lista-avaliacoes');
+                    lista.innerHTML = ''; // Limpa a lista antes de adicionar
+                    
+                    dados.avaliacoes.forEach(avaliacao => {
+                        const item = document.createElement('li');
+                        item.innerHTML = `<strong>Utente ID: ${avaliacao.utente_id}</strong> <br> 
+                                          Score: <strong>${avaliacao.score_total}</strong> | Interpretação: ${avaliacao.interpretacao}`;
+                        lista.appendChild(item);
+                    });
+                })
+                .catch(erro => console.error('Erro ao buscar avaliações:', erro));
+        }
+
+        // Função para ir buscar os médicos
+        function carregarMedicos() {
+            fetch('http://localhost:3000/medicos')
+                .then(resposta => resposta.json())
+                .then(dados => {
+                    const lista = document.getElementById('lista-medicos');
+                    lista.innerHTML = ''; // Limpa a lista antes de adicionar novos
+                    
+                    dados.medicos.forEach(medico => {
+                        const item = document.createElement('li');
+                        item.innerHTML = `<strong>${medico.nome}</strong> - ${medico.especialidade} <br> 
+                                          📧 ${medico.email} | 📞 ${medico.telefone}`;
+                        lista.appendChild(item);
+                    });
+                })
+                .catch(erro => console.error('Erro ao buscar médicos:', erro));
+        }
+
+        // Função para ir buscar os sintomas
+        function carregarSintomas() {
+            fetch('http://localhost:3000/sintomas')
+                .then(resposta => resposta.json())
+                .then(dados => {
+                    const lista = document.getElementById('lista-sintomas');
+                    lista.innerHTML = ''; // Limpa a lista antes de adicionar
+                    
+                    dados.sintomas.forEach(sintoma => {
+                        const item = document.createElement('li');
+                        item.innerHTML = `<strong>Sintoma:</strong> ${sintoma.descricao} <br> 
+                                          <strong>Severidade:</strong> ${sintoma.severidade} | <strong>ID do Utente:</strong> ${sintoma.utente_id}`;
+                        lista.appendChild(item);
+                    });
+                })
+                .catch(erro => console.error('Erro ao buscar sintomas:', erro));
+        }
+    </script>
+
+</body>
+</html>
