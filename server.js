@@ -220,7 +220,6 @@ app.get('/sintomas', (req, res) => {
     });
 });
 
-// Ligar o Servidor
-app.listen(porta, () => {
-    console.log(`🚀 Servidor a correr na porta http://localhost:${porta}`);
+app.listen(PORT, () => {
+    console.log(`🚀 Servidor a correr na porta http://localhost:${PORT}`);
 });
