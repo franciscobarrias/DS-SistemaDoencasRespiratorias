@@ -3,65 +3,169 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Clínica SaudINOB</title>
+    <title>Dashboard - SaudINOB</title>
     <style>
-        body { font-family: Arial, sans-serif; padding: 20px; background-color: #f4f7f6; }
-        h1 { color: #2c3e50; }
-        button { padding: 10px 15px; font-size: 16px; background-color: #3498db; color: white; border: none; border-radius: 5px; cursor: pointer; }
-        button:hover { background-color: #2980b9; }
-        ul { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-        li { margin-bottom: 10px; font-size: 18px; list-style-type: none; border-bottom: 1px solid #eee; padding-bottom: 10px; }
+        :root {
+            --primary: #2c3e50;
+            --bg: #f4f7f6;
+            --card-bg: #ffffff;
+            --btn-blue: #3498db;
+            --btn-green: #27ae60;
+            --btn-purple: #8e44ad;
+            --btn-orange: #e67e22;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body { 
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; 
+            background-color: var(--bg); 
+            color: #333;
+            padding: 20px;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: var(--card-bg);
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+        }
+
+        h1 { color: var(--primary); font-size: 24px; }
+
+
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+
+        .card {
+            background: var(--card-bg);
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .card h2 {
+            font-size: 18px;
+            margin-bottom: 15px;
+            color: var(--primary);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+
+        button { 
+            padding: 8px 12px; 
+            font-size: 14px; 
+            color: white; 
+            border: none; 
+            border-radius: 5px; 
+            cursor: pointer; 
+            transition: opacity 0.2s;
+        }
+        button:hover { opacity: 0.8; }
+        
+        .btn-blue { background-color: var(--btn-blue); }
+        .btn-green { background-color: var(--btn-green); }
+        .btn-purple { background-color: var(--btn-purple); }
+        .btn-orange { background-color: var(--btn-orange); }
+
+ 
+        ul { 
+            list-style-type: none; 
+            margin-top: 15px;
+            max-height: 250px; 
+            overflow-y: auto; 
+            padding-right: 5px;
+        }
+
+    
+        ul::-webkit-scrollbar { width: 6px; }
+        ul::-webkit-scrollbar-thumb { background: #ccc; border-radius: 4px; }
+
+        li { 
+            background: #fdfdfd;
+            border: 1px solid #eee;
+            border-radius: 6px;
+            margin-bottom: 10px; 
+            padding: 12px;
+            font-size: 14px;
+            line-height: 1.5;
+        }
     </style>
 </head>
 <body>
 
-    <h1>Bem-vindo à Clínica SaudINOB 🩺</h1>
-    <button onclick="carregarUtentes()">Carregar Lista de Utentes</button>
-    
-    <ul id="lista-utentes"></ul>
+    <header>
+        <h1>Bem-vindo à sua clínica</h1>
+    </header>
 
-    <br><br> <h2>Resultados Clínicos 📊</h2>
-    <button onclick="carregarAvaliacoes()" style="background-color: #27ae60;">Carregar Avaliações CARAT</button>
-    
-    <ul id="lista-avaliacoes"></ul>
+    <div class="dashboard-grid">
+        
+        <div class="card">
+            <h2>Utentes Registados <button class="btn-blue" onclick="carregarUtentes()">Carregar</button></h2>
+            <ul id="lista-utentes">
+                <li style="text-align: center; color: #888; border: none;">Sem dados carregados.</li>
+            </ul>
+        </div>
 
-    <br><br>
-    <h2>Equipa Médica 👨‍⚕️👩‍⚕️</h2>
-    <button onclick="carregarMedicos()" style="background-color: #8e44ad;">Carregar Equipa Médica</button>
-    <ul id="lista-medicos"></ul>
+        <div class="card">
+            <h2>Resultados Clínicos <button class="btn-green" onclick="carregarAvaliacoes()">Carregar</button></h2>
+            <ul id="lista-avaliacoes">
+                <li style="text-align: center; color: #888; border: none;">Sem dados carregados.</li>
+            </ul>
+        </div>
 
-    <br><br>
-    <h2>Sintomas Registados 🤧</h2>
-    <button onclick="carregarSintomas()" style="background-color: #e67e22;">Carregar Sintomas</button>
-    <ul id="lista-sintomas"></ul>
+        <div class="card">
+            <h2>Equipa Médica <button class="btn-purple" onclick="carregarMedicos()">Carregar</button></h2>
+            <ul id="lista-medicos">
+                <li style="text-align: center; color: #888; border: none;">Sem dados carregados.</li>
+            </ul>
+        </div>
+
+        <div class="card">
+            <h2>Sintomas <button class="btn-orange" onclick="carregarSintomas()">Carregar</button></h2>
+            <ul id="lista-sintomas">
+                <li style="text-align: center; color: #888; border: none;">Sem dados carregados.</li>
+            </ul>
+        </div>
+
+    </div>
 
     <script>
-        // Esta função vai bater à porta do teu Servidor!
         function carregarUtentes() {
+            const lista = document.getElementById('lista-utentes');
+            lista.innerHTML = '<li style="text-align: center;">A carregar...</li>';
             fetch('http://localhost:3000/utentes')
                 .then(resposta => resposta.json())
                 .then(dados => {
-                    const lista = document.getElementById('lista-utentes');
-                    lista.innerHTML = ''; // Limpa a lista antes de adicionar novos
-                    
-                    // Para cada utente, cria uma linha na lista
+                    lista.innerHTML = ''; 
                     dados.utentes.forEach(utente => {
                         const item = document.createElement('li');
                         item.innerHTML = `<strong>${utente.nome}</strong> <br> 📧 ${utente.email} | 📞 ${utente.telefone}`;
                         lista.appendChild(item);
                     });
                 })
-                .catch(erro => console.error('Erro ao buscar dados:', erro));
+                .catch(erro => { lista.innerHTML = '<li>Erro ao carregar dados.</li>'; });
         }
 
-        // Função para ir buscar as avaliações CARAT
         function carregarAvaliacoes() {
+            const lista = document.getElementById('lista-avaliacoes');
+            lista.innerHTML = '<li style="text-align: center;">A carregar...</li>';
             fetch('http://localhost:3000/avaliacoes')
                 .then(resposta => resposta.json())
                 .then(dados => {
-                    const lista = document.getElementById('lista-avaliacoes');
-                    lista.innerHTML = ''; // Limpa a lista antes de adicionar
-                    
+                    lista.innerHTML = ''; 
                     dados.avaliacoes.forEach(avaliacao => {
                         const item = document.createElement('li');
                         item.innerHTML = `<strong>Utente ID: ${avaliacao.utente_id}</strong> <br> 
@@ -69,17 +173,16 @@
                         lista.appendChild(item);
                     });
                 })
-                .catch(erro => console.error('Erro ao buscar avaliações:', erro));
+                .catch(erro => { lista.innerHTML = '<li>Erro ao carregar dados.</li>'; });
         }
 
-        // Função para ir buscar os médicos
         function carregarMedicos() {
+            const lista = document.getElementById('lista-medicos');
+            lista.innerHTML = '<li style="text-align: center;">A carregar...</li>';
             fetch('http://localhost:3000/medicos')
                 .then(resposta => resposta.json())
                 .then(dados => {
-                    const lista = document.getElementById('lista-medicos');
-                    lista.innerHTML = ''; // Limpa a lista antes de adicionar novos
-                    
+                    lista.innerHTML = ''; 
                     dados.medicos.forEach(medico => {
                         const item = document.createElement('li');
                         item.innerHTML = `<strong>${medico.nome}</strong> - ${medico.especialidade} <br> 
@@ -87,27 +190,25 @@
                         lista.appendChild(item);
                     });
                 })
-                .catch(erro => console.error('Erro ao buscar médicos:', erro));
+                .catch(erro => { lista.innerHTML = '<li>Erro ao carregar dados.</li>'; });
         }
 
-        // Função para ir buscar os sintomas
         function carregarSintomas() {
+            const lista = document.getElementById('lista-sintomas');
+            lista.innerHTML = '<li style="text-align: center;">A carregar...</li>';
             fetch('http://localhost:3000/sintomas')
                 .then(resposta => resposta.json())
                 .then(dados => {
-                    const lista = document.getElementById('lista-sintomas');
-                    lista.innerHTML = ''; // Limpa a lista antes de adicionar
-                    
+                    lista.innerHTML = ''; 
                     dados.sintomas.forEach(sintoma => {
                         const item = document.createElement('li');
                         item.innerHTML = `<strong>Sintoma:</strong> ${sintoma.descricao} <br> 
-                                          <strong>Severidade:</strong> ${sintoma.severidade} | <strong>ID do Utente:</strong> ${sintoma.utente_id}`;
+                                          <strong>Severidade:</strong> ${sintoma.severidade} | <strong>ID Utente:</strong> ${sintoma.utente_id}`;
                         lista.appendChild(item);
                     });
                 })
-                .catch(erro => console.error('Erro ao buscar sintomas:', erro));
+                .catch(erro => { lista.innerHTML = '<li>Erro ao carregar dados.</li>'; });
         }
     </script>
-
 </body>
 </html>
