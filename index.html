@@ -160,21 +160,27 @@
         }
 
         function carregarAvaliacoes() {
-            const lista = document.getElementById('lista-avaliacoes');
-            lista.innerHTML = '<li style="text-align: center;">A carregar...</li>';
-            fetch('http://localhost:3000/avaliacoes')
-                .then(resposta => resposta.json())
-                .then(dados => {
-                    lista.innerHTML = ''; 
-                    dados.avaliacoes.forEach(avaliacao => {
-                        const item = document.createElement('li');
-                        item.innerHTML = `<strong>Utente ID: ${avaliacao.utente_id}</strong> <br> 
-                                          Score: <strong>${avaliacao.score_total}</strong> | Interpretação: ${avaliacao.interpretacao}`;
-                        lista.appendChild(item);
-                    });
-                })
-                .catch(erro => { lista.innerHTML = '<li>Erro ao carregar dados.</li>'; });
-        }
+             const lista = document.getElementById('lista-avaliacoes');
+             lista.innerHTML = '<li style="text-align: center;">A carregar...</li>';
+             fetch('http://localhost:3000/avaliacoes')
+             .then(resposta => resposta.json())
+             .then(dados => {
+                     lista.innerHTML = ''; 
+                     dados.avaliacoes.forEach(avaliacao => {
+                     const item = document.createElement('li');
+                        
+                        // Formatar a data ou indicar que não existe
+                        const dataFormatada = avaliacao.data_preenchimento 
+                            ? new Date(avaliacao.data_preenchimento).toLocaleString('pt-PT') 
+                            : 'Data não registada';
+
+                         item.innerHTML = `<strong>Utente ID: ${avaliacao.utente_id}</strong> <span style="color: #666; font-size: 0.9em;">(${dataFormatada})</span> <br> 
+                                     Score: <strong>${avaliacao.score_total}</strong> | Interpretação: ${avaliacao.interpretacao}`;
+                         lista.appendChild(item);
+             });
+    })
+ .catch(erro => { lista.innerHTML = '<li>Erro ao carregar dados.</li>'; });
+ }
 
         function carregarMedicos() {
             const lista = document.getElementById('lista-medicos');

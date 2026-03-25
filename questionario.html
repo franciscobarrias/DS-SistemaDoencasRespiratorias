@@ -3,29 +3,128 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Questionário CARAT</title>
+    <title>Fast CARAT</title>
     <style>
-        :root { --primary: #2c3e50; --bg: #f4f7f6; --card-bg: #ffffff; --btn-blue: #3498db; }
-        body { font-family: 'Segoe UI', sans-serif; background-color: var(--bg); color: #333; padding: 20px; max-width: 800px; margin: 0 auto; }
-        .card { background: var(--card-bg); border-radius: 10px; padding: 30px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
-        h1 { color: var(--primary); text-align: center; }
-        .pergunta { margin-bottom: 20px; padding-bottom: 15px; border-bottom: 1px solid #eee; }
-        .opcoes { display: flex; gap: 15px; margin-top: 10px; }
-        input[type="number"] { padding: 8px; width: 100%; margin-top: 5px; margin-bottom: 20px; border: 1px solid #ccc; border-radius: 4px; }
-        button { padding: 12px 20px; font-size: 16px; width: 100%; background-color: var(--btn-blue); color: white; border: none; border-radius: 5px; cursor: pointer; }
-        button:hover { opacity: 0.9; }
-        #resultado { margin-top: 20px; padding: 15px; border-radius: 5px; display: none; text-align: center; font-weight: bold; }
+        :root { --primary: #1e5a8c; --bg: #f9f9f9; --text: #333; --border: #ddd; }
+        body { font-family: Arial, sans-serif; background-color: var(--bg); color: var(--text); padding: 20px; max-width: 900px; margin: 0 auto; }
+        .header { background: var(--primary); color: white; padding: 20px; text-align: center; border-radius: 5px 5px 0 0; }
+        .container { background: white; padding: 30px; border: 1px solid var(--border); border-top: none; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .section-title { font-weight: bold; margin-bottom: 20px; color: var(--primary); }
+        table { width: 100%; border-collapse: collapse; margin-bottom: 30px; }
+        th, td { padding: 12px; text-align: center; border-bottom: 1px solid var(--border); }
+        th { background-color: #f1f5f9; font-weight: normal; font-size: 14px; }
+        td.pergunta { text-align: left; font-weight: bold; width: 40%; }
+        input[type="radio"] { transform: scale(1.2); cursor: pointer; }
+        .id-container { margin-bottom: 25px; padding: 15px; background: #eef2f5; border-radius: 5px; }
+        .id-container input { padding: 8px; border: 1px solid #ccc; border-radius: 4px; width: 100px; }
+        button { background-color: var(--primary); color: white; padding: 15px 30px; border: none; font-size: 16px; border-radius: 5px; cursor: pointer; width: 100%; }
+        button:hover { background-color: #15426b; }
+        #resultado { margin-top: 20px; padding: 15px; text-align: center; font-weight: bold; display: none; border-radius: 4px; }
     </style>
 </head>
 <body>
 
-    <div class="card">
-        <h1>Avaliação CARAT</h1>
-        
-        <label><strong>ID do Utente:</strong></label>
-        <input type="number" id="utente_id" placeholder="Ex: 1" required>
+    <div class="header">
+        <h1>Control of Allergic Rhinitis and Asthma Test</h1>
+    </div>
 
-        <div id="formulario-perguntas"></div>
+    <div class="container">
+        <div class="id-container">
+            <label><strong>ID do Utente:</strong></label>
+            <input type="number" id="utente_id" required>
+        </div>
+
+        <div class="section-title">Durante as últimas 4 semanas, por causa da sua asma/rinite/alergia quantas vezes, em média, teve:</div>
+        
+        <table>
+            <thead>
+                <tr>
+                    <th></th>
+                    <th>Nunca<br></th>
+                    <th>Até 2 dias<br>por semana<br></th>
+                    <th>Mais de 2 dias<br>por semana<br></th>
+                    <th>Quase todos os dias<br>ou todos os dias<br></th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr><td class="pergunta">1. Nariz entupido?</td>
+                    <td><input type="radio" name="p1" value="3"></td>
+                    <td><input type="radio" name="p1" value="2"></td>
+                    <td><input type="radio" name="p1" value="1"></td>
+                    <td><input type="radio" name="p1" value="0"></td>
+                </tr>
+                <tr><td class="pergunta">2. Espirros?</td>
+                    <td><input type="radio" name="p2" value="3"></td>
+                    <td><input type="radio" name="p2" value="2"></td>
+                    <td><input type="radio" name="p2" value="1"></td>
+                    <td><input type="radio" name="p2" value="0"></td>
+                </tr>
+                <tr><td class="pergunta">3. Comichão no nariz?</td>
+                    <td><input type="radio" name="p3" value="3"></td>
+                    <td><input type="radio" name="p3" value="2"></td>
+                    <td><input type="radio" name="p3" value="1"></td>
+                    <td><input type="radio" name="p3" value="0"></td>
+                </tr>
+                <tr><td class="pergunta">4. Nariz a pingar?</td>
+                    <td><input type="radio" name="p4" value="3"></td>
+                    <td><input type="radio" name="p4" value="2"></td>
+                    <td><input type="radio" name="p4" value="1"></td>
+                    <td><input type="radio" name="p4" value="0"></td>
+                </tr>
+                <tr><td class="pergunta">5. Falta de ar/dificuldade em respirar?</td>
+                    <td><input type="radio" name="p5" value="3"></td>
+                    <td><input type="radio" name="p5" value="2"></td>
+                    <td><input type="radio" name="p5" value="1"></td>
+                    <td><input type="radio" name="p5" value="0"></td>
+                </tr>
+                <tr><td class="pergunta">6. Pieira/chiadeira no peito?</td>
+                    <td><input type="radio" name="p6" value="3"></td>
+                    <td><input type="radio" name="p6" value="2"></td>
+                    <td><input type="radio" name="p6" value="1"></td>
+                    <td><input type="radio" name="p6" value="0"></td>
+                </tr>
+                <tr><td class="pergunta">7. Aperto no peito ao fazer esforço físico?</td>
+                    <td><input type="radio" name="p7" value="3"></td>
+                    <td><input type="radio" name="p7" value="2"></td>
+                    <td><input type="radio" name="p7" value="1"></td>
+                    <td><input type="radio" name="p7" value="0"></td>
+                </tr>
+                <tr><td class="pergunta">8. Cansaço/limitação nas tarefas do dia-a-dia?</td>
+                    <td><input type="radio" name="p8" value="3"></td>
+                    <td><input type="radio" name="p8" value="2"></td>
+                    <td><input type="radio" name="p8" value="1"></td>
+                    <td><input type="radio" name="p8" value="0"></td>
+                </tr>
+                <tr><td class="pergunta">9. Acordou durante a noite por causa da sua asma/rinite/alergia?</td>
+                    <td><input type="radio" name="p9" value="3"></td>
+                    <td><input type="radio" name="p9" value="2"></td>
+                    <td><input type="radio" name="p9" value="1"></td>
+                    <td><input type="radio" name="p9" value="0"></td>
+                </tr>
+            </tbody>
+        </table>
+
+        <div class="section-title">Durante as últimas 4 semanas, por causa da sua asma/rinite/alergia quantas vezes teve de:</div>
+
+        <table>
+            <thead>
+                <tr>
+                    <th></th>
+                    <th>Não tomo<br>medicamentos<br></th>
+                    <th>Nunca<br></th>
+                    <th>Menos de 7 dias<br></th>
+                    <th>7 ou mais dias<br></th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr><td class="pergunta">10. Aumentar a utilização dos medicamentos?</td>
+                    <td><input type="radio" name="p10" value="3"></td>
+                    <td><input type="radio" name="p10" value="2"></td>
+                    <td><input type="radio" name="p10" value="1"></td>
+                    <td><input type="radio" name="p10" value="0"></td>
+                </tr>
+            </tbody>
+        </table>
 
         <button onclick="submeterQuestionario()">Submeter Avaliação</button>
         
@@ -33,32 +132,15 @@
     </div>
 
     <script>
-        // Gerar 10 perguntas dinamicamente para o formulário
-        const container = document.getElementById('formulario-perguntas');
-        for (let i = 1; i <= 10; i++) {
-            const div = document.createElement('div');
-            div.className = 'pergunta';
-            div.innerHTML = `
-                <p><strong>Pergunta ${i}:</strong> Como avalia este sintoma? (0 a 4)</p>
-                <div class="opcoes">
-                    <label><input type="radio" name="p${i}" value="0" checked> 0</label>
-                    <label><input type="radio" name="p${i}" value="1"> 1</label>
-                    <label><input type="radio" name="p${i}" value="2"> 2</label>
-                    <label><input type="radio" name="p${i}" value="3"> 3</label>
-                    <label><input type="radio" name="p${i}" value="4"> 4</label>
-                </div>
-            `;
-            container.appendChild(div);
-        }
-
         function submeterQuestionario() {
             const utente_id = document.getElementById('utente_id').value;
             if (!utente_id) return alert('Por favor, insira o ID do Utente.');
 
             const respostas = [];
             for (let i = 1; i <= 10; i++) {
-                const resposta = document.querySelector(`input[name="p${i}"]:checked`).value;
-                respostas.push(parseInt(resposta));
+                const resposta = document.querySelector(`input[name="p${i}"]:checked`);
+                if (!resposta) return alert(`Por favor, responda à Pergunta ${i}.`);
+                respostas.push(parseInt(resposta.value));
             }
 
             fetch('http://localhost:3000/avaliacoes', {

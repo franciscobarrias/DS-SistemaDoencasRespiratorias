@@ -3,7 +3,7 @@ function computeCaratFromAnswers(answers) {
     const totalScore = values.reduce((sum, value) => sum + Number(value || 0), 0);
 
     let interpretation = 'Nao controlado';
-    if (totalScore >= 24) {
+    if (totalScore > 24) {
         interpretation = 'Controlado';
     } else if (totalScore >= 16) {
         interpretation = 'Parcialmente controlado';

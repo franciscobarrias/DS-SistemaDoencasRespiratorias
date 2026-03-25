@@ -72,7 +72,7 @@ CREATE TABLE Medicacao (
     FOREIGN KEY (utente_id) REFERENCES Utente(id) ON DELETE CASCADE
 );
 
--- 7. Tabela Sintoma [cite: 116]
+-- 7. Tabela Sintoma 
 CREATE TABLE Sintoma (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     data_registo DATE DEFAULT CURRENT_TIMESTAMP,
@@ -82,7 +82,7 @@ CREATE TABLE Sintoma (
     FOREIGN KEY (utente_id) REFERENCES Utente(id) ON DELETE CASCADE
 );
 
--- 8. Tabela Exame [cite: 115]
+-- 8. Tabela Exame
 CREATE TABLE Exame (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     tipo TEXT NOT NULL,
