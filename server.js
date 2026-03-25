@@ -62,6 +62,27 @@ app.get('/avaliacoes', (req, res) => {
     });
 });
 
+// Rota: Submeter nova Avaliação CARAT
+app.post('/avaliacoes', (req, res) => {
+    const { utente_id, respostas } = req.body;
+    
+    // O teu ficheiro carat.js processa as respostas
+    const score_total = computeCaratFromAnswers(respostas);
+    const interpretacao = recommendationsFromInterpretation(score_total);
+
+    const sql = 'INSERT INTO AvaliacaoCARAT (utente_id, score_total, interpretacao) VALUES (?, ?, ?)';
+    db.run(sql, [utente_id, score_total, interpretacao], function(err) {
+        if (err) return res.status(500).json({ erro: err.message });
+        res.json({ 
+            mensagem: 'Avaliação submetida com sucesso.',
+            id_avaliacao: this.lastID, 
+            score_total: score_total, 
+            interpretacao: interpretacao 
+        });
+    });
+});
+
+
 // Ligar o Servidor
 app.listen(PORT, () => {
     console.log(`Servidor a correr na porta http://localhost:${PORT}`);
