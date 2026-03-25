@@ -21,6 +21,23 @@ const db = new sqlite3.Database('./clinica.db', (err) => {
  } else {
  console.log('Base de dados ligada com sucesso.');
         
+ // Cria a tabela de Sintomas se ela não existir
+        db.run(`CREATE TABLE IF NOT EXISTS Sintoma (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            utente_id INTEGER,
+            descricao TEXT,
+            severidade TEXT,
+            data_registo TEXT
+        )`, (err) => {
+            if (err) console.error("Erro ao criar tabela Sintoma:", err.message);
+            else console.log("Tabela 'Sintoma' pronta.");
+        });
+
+        db.run("ALTER TABLE AvaliacaoCARAT ADD COLUMN data_preenchimento TEXT", (err) => {
+            // Ignora o erro se a coluna já existir
+        });
+
+
         // Adiciona a coluna data_preenchimento à tabela
         db.run("ALTER TABLE AvaliacaoCARAT ADD COLUMN data_preenchimento TEXT", (err) => {
             if (!err) {

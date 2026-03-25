@@ -35,7 +35,6 @@
 
         h1 { color: var(--primary); font-size: 24px; }
 
-
         .dashboard-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
@@ -139,6 +138,18 @@
                 <li style="text-align: center; color: #888; border: none;">Sem dados carregados.</li>
             </ul>
         </div>
+    
+    <div class="card" style="max-width: 600px; margin: 20px auto;">
+    <h2>Registar Sintoma</h2>
+    <input type="number" id="symp-utente-id" placeholder="ID do Utente" style="padding:8px; margin-bottom:10px;">
+    <input type="text" id="symp-descricao" placeholder="Ex: Dor, Inflamação" style="padding:8px; margin-bottom:10px;">
+    <select id="symp-severidade" style="padding:8px; margin-bottom:10px;">
+        <option value="Leve">Leve</option>
+        <option value="Moderada">Moderada</option>
+        <option value="Grave">Grave</option>
+    </select>
+    <button class="btn-orange" onclick="enviarSintoma()">Gravar na Base de Dados</button>
+</div>
 
     </div>
 
@@ -215,6 +226,26 @@
                 })
                 .catch(erro => { lista.innerHTML = '<li>Erro ao carregar dados.</li>'; });
         }
+
+        function enviarSintoma() {
+    const dados = {
+        utente_id: document.getElementById('symp-utente-id').value,
+        descricao: document.getElementById('symp-descricao').value,
+        severidade: document.getElementById('symp-severidade').value
+    };
+
+    fetch('http://localhost:3000/sintomas', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(dados)
+    })
+    .then(res => res.json())
+    .then(res => {
+        alert(res.mensagem);
+        carregarSintomas(); // Atualiza a lista automaticamente no dashboard
+    })
+    .catch(err => console.error('Erro:', err));
+}
     </script>
 </body>
 </html>
