@@ -65,7 +65,7 @@ app.get('/sintomas', (req, res) => {
     });
 });
 
-// 🌟 A ROTA QUE FALTAVA: Sintomas (Escrever/Gravar) 🌟
+// Rota: Sintomas (Escrever/Gravar)
 app.post('/sintomas', (req, res) => {
     const { utente_id, descricao, severidade } = req.body;
     const data_registo = new Date().toISOString();
@@ -77,6 +77,19 @@ app.post('/sintomas', (req, res) => {
             return res.status(500).json({ erro: err.message });
         }
         res.json({ mensagem: 'Sintoma guardado com sucesso na base de dados!' });
+    });
+});
+
+// 🗑️ NOVA ROTA: Sintomas (Apagar/DELETE) 🗑️
+app.delete('/sintomas/:id', (req, res) => {
+    const idSintoma = req.params.id; 
+    const sql = 'DELETE FROM Sintoma WHERE id = ?';
+    
+    db.run(sql, idSintoma, function(err) {
+        if (err) {
+            return res.status(500).json({ erro: err.message });
+        }
+        res.json({ mensagem: 'Sintoma apagado com sucesso!' });
     });
 });
 

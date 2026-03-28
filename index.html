@@ -219,12 +219,31 @@
                     lista.innerHTML = ''; 
                     dados.sintomas.forEach(sintoma => {
                         const item = document.createElement('li');
+                        
+                        // Novo layout com o botão de apagar do lado direito
                         item.innerHTML = `<strong>Sintoma:</strong> ${sintoma.descricao} <br> 
-                                          <strong>Severidade:</strong> ${sintoma.severidade} | <strong>ID Utente:</strong> ${sintoma.utente_id}`;
+                                          <strong>Severidade:</strong> ${sintoma.severidade} | <strong>ID Utente:</strong> ${sintoma.utente_id}
+                                          <button onclick="apagarSintoma(${sintoma.id})" style="background-color: #e74c3c; color: white; border: none; padding: 4px 8px; border-radius: 4px; margin-top: 5px; cursor: pointer; float: right; font-size: 12px;">🗑️ Apagar</button>
+                                          <div style="clear: both;"></div>`;
                         lista.appendChild(item);
                     });
                 })
                 .catch(erro => { lista.innerHTML = '<li>Erro ao carregar dados.</li>'; });
+        }
+
+        // Função mágica para avisar o servidor para apagar o sintoma
+        function apagarSintoma(id) {
+            if (confirm('Tens a certeza que queres apagar este sintoma da base de dados?')) {
+                fetch(`http://localhost:3000/sintomas/${id}`, {
+                    method: 'DELETE'
+                })
+                .then(resposta => resposta.json())
+                .then(dados => {
+                    alert(dados.mensagem);
+                    carregarSintomas(); // Recarrega a lista para o sintoma desaparecer do ecrã!
+                })
+                .catch(erro => console.error('Erro ao apagar:', erro));
+            }
         }
 
         function enviarSintoma() {
@@ -275,18 +294,6 @@
                 alert('Erro ao guardar. Abre a consola (F12) para ver o que falhou!');
             });
         }
-
-    fetch('http://localhost:3000/sintomas', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(dados)
-    })
-    .then(res => res.json())
-    .then(res => {
-        alert(res.mensagem);
-        carregarSintomas(); // Atualiza a lista automaticamente no dashboard
-    })
-    .catch(err => console.error('Erro:', err));
 
     </script>
 </body>
