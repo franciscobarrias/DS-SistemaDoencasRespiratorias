@@ -228,11 +228,53 @@
         }
 
         function enviarSintoma() {
-    const dados = {
-        utente_id: document.getElementById('symp-utente-id').value,
-        descricao: document.getElementById('symp-descricao').value,
-        severidade: document.getElementById('symp-severidade').value
-    };
+            console.log("1. Botão clicado! A iniciar processo...");
+
+            const utenteId = document.getElementById('symp-utente-id').value;
+            const descricao = document.getElementById('symp-descricao').value;
+            const severidade = document.getElementById('symp-severidade').value;
+
+            // Proteção: Obriga a preencher os dados antes de enviar
+            if (!utenteId || !descricao) {
+                alert("⚠️ Por favor, preenche o ID do Utente e a Descrição do sintoma!");
+                return;
+            }
+
+            const dados = {
+                utente_id: parseInt(utenteId), // Garante que o ID é um número
+                descricao: descricao,
+                severidade: severidade
+            };
+
+            console.log("2. A enviar estes dados para o servidor:", dados);
+
+            fetch('http://localhost:3000/sintomas', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(dados)
+            })
+            .then(res => {
+                console.log("3. O servidor respondeu! Status:", res.status);
+                if (!res.ok) {
+                    throw new Error("O servidor deu erro (Status " + res.status + ")");
+                }
+                return res.json();
+            })
+            .then(dadosRecebidos => {
+                console.log("4. Sucesso total!", dadosRecebidos);
+                alert("✅ Sintoma guardado na Base de Dados!");
+                
+                // Limpa as caixinhas de texto depois de gravar
+                document.getElementById('symp-descricao').value = '';
+                document.getElementById('symp-utente-id').value = '';
+                
+                carregarSintomas(); // Atualiza a lista laranja
+            })
+            .catch(err => {
+                console.error('❌ Erro detetado:', err);
+                alert('Erro ao guardar. Abre a consola (F12) para ver o que falhou!');
+            });
+        }
 
     fetch('http://localhost:3000/sintomas', {
         method: 'POST',
@@ -245,7 +287,7 @@
         carregarSintomas(); // Atualiza a lista automaticamente no dashboard
     })
     .catch(err => console.error('Erro:', err));
-}
+
     </script>
 </body>
 </html>
