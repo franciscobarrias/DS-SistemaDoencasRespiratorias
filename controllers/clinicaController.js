@@ -1,6 +1,9 @@
 const db = require('../config/db');
-const { computeCaratFromAnswers, recommendationsFromInterpretation } = require('../carat');
+const { computeCaratFromAnswers, recommendationsFromInterpretation, nextStepFromInterpretation } = require('../carat');
 const { validationResult } = require('express-validator');
+const Ajv = require('ajv');
+const caratSchema = require('../contracts/carat-request.schema.json');
+const ajv = new Ajv();
 
 exports.mensagemRaiz = (req, res) => res.json({ message: 'SaudINOB API pronta' });
 
@@ -84,5 +87,129 @@ exports.addAvaliacao = (req, res) => {
     db.run(sql, [utente_id, JSON.stringify(respostasSeguras), score_total, interpretacao, data_preenchimento], function(err) {
         if (err) return res.status(500).json({ erro: err.message });
         res.json({ mensagem: 'Avaliação submetida com sucesso.', score_total, interpretacao });
+    });
+};
+
+exports.addCaratEvaluation = (req, res) => {
+    const erros = validationResult(req);
+    if (!erros.isEmpty()) {
+        return res.status(400).json({
+            erro: "Dados inválidos detetados pelo servidor.",
+            detalhes: erros.array()
+        });
+    }
+    const utenteId = parseInt(req.params.id, 10);
+    const payload = req.body;
+
+    // 1. Validar payload com schema JSON
+    const validate = ajv.compile(caratSchema);
+    if (!validate(payload)) {
+        return res.status(400).json({
+            erro: "Payload inválido",
+            detalhes: validate.errors
+        });
+    }
+
+    // 2. Validar se utente existe e obter medico_id
+    db.get('SELECT id, medico_id FROM Utente WHERE id = ?', [utenteId], (err, utente) => {
+        if (err) {
+            return res.status(500).json({ erro: 'Erro ao consultar utente', detalhes: err.message });
+        }
+        if (!utente) {
+            return res.status(404).json({ erro: 'Utente não encontrado' });
+        }
+        const medicoId = utente.medico_id;
+
+        // 3. Calcular score e interpretação
+        const { totalScore, interpretation } = computeCaratFromAnswers(payload.answers);
+
+        // 4. Gerar recomendações e próximo passo
+        const recommendations = recommendationsFromInterpretation(interpretation);
+        const nextStep = nextStepFromInterpretation(interpretation);
+
+        // 5. Consultar última avaliação do utente
+        db.get(
+            'SELECT score_total FROM AvaliacaoCARAT WHERE utente_id = ? ORDER BY data DESC LIMIT 1',
+            [utenteId],
+            (err, lastEval) => {
+                if (err) {
+                    return res.status(500).json({ erro: 'Erro ao consultar última avaliação', detalhes: err.message });
+                }
+
+                // 6. Guardar avaliação na base de dados
+                const respostasStr = JSON.stringify(payload.answers);
+                db.run(
+                    'INSERT INTO AvaliacaoCARAT (respostas, score_total, interpretacao, utente_id) VALUES (?, ?, ?, ?)',
+                    [respostasStr, totalScore, interpretation, utenteId],
+                    function (err) {
+                        if (err) {
+                            return res.status(500).json({ erro: 'Erro ao guardar avaliação', detalhes: err.message });
+                        }
+
+                        const avaliacaoId = this.lastID;
+                        // 7. Gerar alerta se necessário
+                        const LIMIAR = 16; // Exemplo: limiar de controlo insuficiente
+                        const DELTA = 4;   // Exemplo: deterioração relevante
+
+                        let alertaGerado = false;
+
+                        const deterioracao = lastEval ? (lastEval.score_total - totalScore) : 0;
+                        const motivo = (totalScore < LIMIAR)
+                            ? 'Score CARAT abaixo do limiar'
+                            : (deterioracao >= DELTA)
+                                ? 'Deterioração significativa face à última avaliação'
+                                : null;
+
+                        if (motivo) {
+                            alertaGerado = true;
+                            db.run(
+                                `INSERT INTO Alerta (tipo, prioridade, estado, motivo, medico_id, utente_id, avaliacao_id)
+                                 VALUES (?, ?, ?, ?, ?, ?, ?)`,
+                                [
+                                    'CARAT',
+                                    'Alta',
+                                    'NOVO',
+                                    motivo,
+                                    medicoId,
+                                    utenteId,
+                                    avaliacaoId
+                                ],
+                                function (err) {
+                                    if (err) {
+                                        // Erro ao criar alerta, mas avaliação foi criada
+                                        return res.status(201).json({
+                                            avaliacaoId,
+                                            score: totalScore,
+                                            interpretacao: interpretation,
+                                            recomendacoes: recommendations,
+                                            proximoPasso: nextStep,
+                                            alertaGerado: false,
+                                            erroAlerta: 'Erro ao criar alerta: ' + err.message
+                                        });
+                                    }
+                                    res.status(201).json({
+                                        avaliacaoId,
+                                        score: totalScore,
+                                        interpretacao: interpretation,
+                                        recomendacoes: recommendations,
+                                        proximoPasso: nextStep,
+                                        alertaGerado: true
+                                    });
+                                }
+                            );
+                        } else {
+                            res.status(201).json({
+                                avaliacaoId,
+                                score: totalScore,
+                                interpretacao: interpretation,
+                                recomendacoes: recommendations,
+                                proximoPasso: nextStep,
+                                alertaGerado: false
+                            });
+                        }
+                    }
+                );
+            }
+        );
     });
 };
