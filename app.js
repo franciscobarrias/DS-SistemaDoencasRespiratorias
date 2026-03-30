@@ -1,5 +1,14 @@
-// Constante base para a API (facilita se mudares de servidor no futuro)
+// Constante base para a API
 const API_URL = 'http://localhost:3000';
+
+// 🛡️ Função de Segurança contra XSS (O nosso Escudo!)
+// Esta função transforma qualquer código HTML malicioso em texto inofensivo
+function escaparHTML(texto) {
+    if (!texto) return '';
+    const div = document.createElement('div');
+    div.textContent = texto; 
+    return div.innerHTML;
+}
 
 function carregarUtentes() {
     const lista = document.getElementById('lista-utentes');
@@ -10,7 +19,8 @@ function carregarUtentes() {
             lista.innerHTML = ''; 
             dados.utentes.forEach(utente => {
                 const item = document.createElement('li');
-                item.innerHTML = `<strong>${utente.nome}</strong> <br> 📧 ${utente.email} | 📞 ${utente.telefone}`;
+                // Aplicamos o escudo aos dados que vêm da base de dados!
+                item.innerHTML = `<strong>${escaparHTML(utente.nome)}</strong> <br> 📧 ${escaparHTML(utente.email)} | 📞 ${escaparHTML(utente.telefone)}`;
                 lista.appendChild(item);
             });
         })
@@ -30,8 +40,9 @@ function carregarAvaliacoes() {
                     ? new Date(avaliacao.data_preenchimento).toLocaleString('pt-PT') 
                     : 'Data não registada';
 
+                // Aplicamos o escudo à interpretação, pois é uma string
                 item.innerHTML = `<strong>Utente ID: ${avaliacao.utente_id}</strong> <span style="color: #666; font-size: 0.9em;">(${dataFormatada})</span> <br> 
-                                Score: <strong>${avaliacao.score_total}</strong> | Interpretação: ${avaliacao.interpretacao}`;
+                                Score: <strong>${avaliacao.score_total}</strong> | Interpretação: ${escaparHTML(avaliacao.interpretacao)}`;
                 lista.appendChild(item);
             });
     })
@@ -47,8 +58,8 @@ function carregarMedicos() {
             lista.innerHTML = ''; 
             dados.medicos.forEach(medico => {
                 const item = document.createElement('li');
-                item.innerHTML = `<strong>${medico.nome}</strong> - ${medico.especialidade} <br> 
-                                    📧 ${medico.email} | 📞 ${medico.telefone}`;
+                item.innerHTML = `<strong>${escaparHTML(medico.nome)}</strong> - ${escaparHTML(medico.especialidade)} <br> 
+                                    📧 ${escaparHTML(medico.email)} | 📞 ${escaparHTML(medico.telefone)}`;
                 lista.appendChild(item);
             });
         })
@@ -64,8 +75,9 @@ function carregarSintomas() {
             lista.innerHTML = ''; 
             dados.sintomas.forEach(sintoma => {
                 const item = document.createElement('li');
-                item.innerHTML = `<strong>Sintoma:</strong> ${sintoma.descricao} <br> 
-                                    <strong>Severidade:</strong> ${sintoma.severidade} | <strong>ID Utente:</strong> ${sintoma.utente_id}
+                // Escudo ativado na descrição e severidade do sintoma!
+                item.innerHTML = `<strong>Sintoma:</strong> ${escaparHTML(sintoma.descricao)} <br> 
+                                    <strong>Severidade:</strong> ${escaparHTML(sintoma.severidade)} | <strong>ID Utente:</strong> ${sintoma.utente_id}
                                     <button onclick="apagarSintoma(${sintoma.id})" style="background-color: #e74c3c; color: white; border: none; padding: 4px 8px; border-radius: 4px; margin-top: 5px; cursor: pointer; float: right; font-size: 12px;">🗑️ Apagar</button>
                                     <div style="clear: both;"></div>`;
                 lista.appendChild(item);
