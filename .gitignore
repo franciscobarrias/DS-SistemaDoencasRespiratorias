@@ -140,3 +140,4 @@ vite.config.ts.timestamp-*
 
 node_modules/
 clinica.db
+.env

@@ -1,7 +1,9 @@
 const sqlite3 = require('sqlite3').verbose();
 
-// Liga à base de dados que está na pasta raiz
-const db = new sqlite3.Database('./clinica.db', (err) => {
+// Agora ele vai buscar o caminho da base de dados ao cofre!
+const dbPath = process.env.DB_PATH;
+
+const db = new sqlite3.Database(dbPath, (err) => {
     if (err) {
         console.error('Erro na base de dados:', err.message);
     } else {
@@ -19,5 +21,4 @@ const db = new sqlite3.Database('./clinica.db', (err) => {
     }
 });
 
-// Exportar para os outros ficheiros poderem usar!
 module.exports = db;
