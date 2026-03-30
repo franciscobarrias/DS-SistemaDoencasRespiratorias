@@ -132,6 +132,9 @@
     </div>
 
     <script>
+        // Adicionada a constante da API!
+        const API_URL = 'http://localhost:3000';
+
         function submeterQuestionario() {
             const utente_id = document.getElementById('utente_id').value;
             if (!utente_id) return alert('Por favor, insira o ID do Utente.');
@@ -143,10 +146,12 @@
                 respostas.push(parseInt(resposta.value));
             }
 
-            fetch('http://localhost:3000/avaliacoes', {
+            // Atualizado com a API_URL
+            fetch(`${API_URL}/avaliacoes`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ utente_id: utente_id, respostas: respostas })
+                // 👇 AQUI ESTÁ A MAGIA! O parseInt(utente_id) resolve o bloqueio de segurança
+                body: JSON.stringify({ utente_id: parseInt(utente_id), respostas: respostas })
             })
             .then(res => res.json())
             .then(dados => {
