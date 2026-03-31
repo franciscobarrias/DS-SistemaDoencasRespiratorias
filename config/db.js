@@ -1,40 +1,18 @@
 const sqlite3 = require('sqlite3').verbose();
+const path = require('path');
 
-// Agora ele vai buscar o caminho da base de dados ao cofre!
-const dbPath = process.env.DB_PATH || './clinica.db'; // Adicionado fallback por segurança
+// 1. Definir o caminho da base de dados (usando o .env ou o fallback)
+const dbPath = process.env.DB_PATH || path.join(__dirname, '../clinica.db');
 
+// 2. Criar a ligação
 const db = new sqlite3.Database(dbPath, (err) => {
     if (err) {
-        console.error('Erro na base de dados:', err.message);
+        console.error('❌ Erro na ligação à base de dados:', err.message);
     } else {
-        console.log('Base de dados ligada com sucesso.');
+        console.log('✅ Base de dados ligada com sucesso.');
         
-        // 1. Tabela de Sintomas
-        db.run(`CREATE TABLE IF NOT EXISTS Sintoma (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            utente_id INTEGER,
-            descricao TEXT,
-            severidade TEXT,
-            data_registo TEXT
-        )`);
-
-        // 2. NOVA TABELA: Alertas (Baseada no teu Modelo ER!)
-        db.run(`CREATE TABLE IF NOT EXISTS Alerta (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            tipo TEXT,
-            prioridade TEXT,
-            estado TEXT,
-            motivo TEXT,
-            data_criacao TEXT,
-            utente_id INTEGER,
-            medico_id INTEGER,
-            avaliacao_id INTEGER
-        )`);
-
-        // 3. Atualização da tabela de Avaliações
-        db.run("ALTER TABLE AvaliacaoCARAT ADD COLUMN data_preenchimento TEXT", (err) => {
-            // Se a coluna já existir, ignora o erro silenciosamente
-        });
+        // Ativar o suporte a chaves estrangeiras em cada ligação (Essencial!)
+        db.run("PRAGMA foreign_keys = ON;");
     }
 });
 
