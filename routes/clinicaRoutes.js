@@ -18,17 +18,10 @@ router.delete('/sintomas/:id', clinicaController.deleteSintoma);
 router.get('/utentes', clinicaController.getUtentes);
 router.get('/avaliacoes', clinicaController.getAvaliacoes);
 
-// 🛡️ NOVA ROTA POST Avaliações CARAT (Protegida)
+// 🛡️ NOVA ROTA POST Avaliações CARAT e Alertas (Protegida)
 router.post('/avaliacoes', [
     body('utente_id').isInt().withMessage('O ID do utente tem de ser um número inteiro.'),
     body('respostas').isArray().withMessage('As respostas têm de ser enviadas numa lista (array).')
 ], clinicaController.addAvaliacao);
-
-
-// Endpoint Sprint 2: POST /patients/:id/carat
-router.post('/patients/:id/carat', [
-    param('id').isInt().withMessage('O ID do paciente deve ser um número inteiro.'),
-    body('answers').isObject().withMessage('O campo answers é obrigatório e deve ser um objeto.')
-], clinicaController.addCaratEvaluation);
 
 module.exports = router;

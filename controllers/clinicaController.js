@@ -1,9 +1,6 @@
 const db = require('../config/db');
-const { computeCaratFromAnswers, recommendationsFromInterpretation, nextStepFromInterpretation } = require('../carat');
+const { computeCaratFromAnswers, recommendationsFromInterpretation } = require('../carat');
 const { validationResult } = require('express-validator');
-const Ajv = require('ajv');
-const caratSchema = require('../contracts/carat-request.schema.json');
-const ajv = new Ajv();
 
 exports.mensagemRaiz = (req, res) => res.json({ message: 'SaudINOB API pronta' });
 
@@ -15,7 +12,6 @@ exports.getMedicos = (req, res) => {
 };
 
 exports.getSintomas = (req, res) => {
-    // 👇 Atualizado: ORDER BY id DESC para os mais recentes aparecerem primeiro!
     db.all('SELECT * FROM Sintoma ORDER BY id DESC', [], (err, rows) => {
         if (err) return res.status(500).json({ erro: err.message });
         res.json({ sintomas: rows });
@@ -58,13 +54,13 @@ exports.getUtentes = (req, res) => {
 };
 
 exports.getAvaliacoes = (req, res) => {
-    // 👇 Atualizado: ORDER BY id DESC para os resultados do CARAT mais recentes aparecerem no topo!
     db.all('SELECT * FROM AvaliacaoCARAT ORDER BY id DESC', [], (err, rows) => {
         if (err) return res.status(500).json({ erro: err.message });
         res.json({ avaliacoes: rows });
     });
 };
 
+// 🛡️ A FUNÇÃO DE MESTRE: Avaliação + Lógica de Negócio (Alertas)
 exports.addAvaliacao = (req, res) => {
     const erros = validationResult(req);
     if (!erros.isEmpty()) {
@@ -78,138 +74,66 @@ exports.addAvaliacao = (req, res) => {
     const respostasSeguras = respostas || [];
     const data_preenchimento = new Date().toISOString();
 
-    const resultado = computeCaratFromAnswers(respostasSeguras);
-    const score_total = resultado.totalScore; 
-    const interpretacao = resultado.interpretation || recommendationsFromInterpretation(score_total);
+    // 1. Validar se o Utente existe e ir buscar o seu Médico (medico_id)
+    db.get('SELECT id, medico_id FROM Utente WHERE id = ?', [utente_id], (err, utente) => {
+        if (err) return res.status(500).json({ erro: 'Erro ao consultar utente', detalhes: err.message });
+        if (!utente) return res.status(404).json({ erro: 'Utente não encontrado na base de dados.' });
+        
+        const medico_id = utente.medico_id;
 
-    const sql = 'INSERT INTO AvaliacaoCARAT (utente_id, respostas, score_total, interpretacao, data_preenchimento) VALUES (?, ?, ?, ?, ?)';
-    
-    db.run(sql, [utente_id, JSON.stringify(respostasSeguras), score_total, interpretacao, data_preenchimento], function(err) {
-        if (err) return res.status(500).json({ erro: err.message });
-        res.json({ mensagem: 'Avaliação submetida com sucesso.', score_total, interpretacao });
-    });
-};
+        // 2. Calcular o Score CARAT e a Interpretação
+        const resultado = computeCaratFromAnswers(respostasSeguras);
+        const score_total = resultado.totalScore; 
+        const interpretacao = resultado.interpretation || recommendationsFromInterpretation(score_total);
 
-exports.addCaratEvaluation = (req, res) => {
-    const erros = validationResult(req);
-    if (!erros.isEmpty()) {
-        return res.status(400).json({
-            erro: "Dados inválidos detetados pelo servidor.",
-            detalhes: erros.array()
-        });
-    }
-    const utenteId = parseInt(req.params.id, 10);
-    const payload = req.body;
+        // 3. Consultar a última avaliação do utente (para calcular a DETERIORAÇÃO)
+        db.get('SELECT score_total FROM AvaliacaoCARAT WHERE utente_id = ? ORDER BY id DESC LIMIT 1', [utente_id], (err, lastEval) => {
+            if (err) return res.status(500).json({ erro: 'Erro ao consultar última avaliação', detalhes: err.message });
 
-    // 1. Validar payload com schema JSON
-    const validate = ajv.compile(caratSchema);
-    if (!validate(payload)) {
-        return res.status(400).json({
-            erro: "Payload inválido",
-            detalhes: validate.errors
-        });
-    }
+            // 4. Guardar a nova avaliação na Base de Dados
+            const sqlAvaliacao = 'INSERT INTO AvaliacaoCARAT (utente_id, respostas, score_total, interpretacao, data_preenchimento) VALUES (?, ?, ?, ?, ?)';
+            db.run(sqlAvaliacao, [utente_id, JSON.stringify(respostasSeguras), score_total, interpretacao, data_preenchimento], function(err) {
+                if (err) return res.status(500).json({ erro: 'Erro ao guardar avaliação', detalhes: err.message });
 
-    // 2. Validar se utente existe e obter medico_id
-    db.get('SELECT id, medico_id FROM Utente WHERE id = ?', [utenteId], (err, utente) => {
-        if (err) {
-            return res.status(500).json({ erro: 'Erro ao consultar utente', detalhes: err.message });
-        }
-        if (!utente) {
-            return res.status(404).json({ erro: 'Utente não encontrado' });
-        }
-        const medicoId = utente.medico_id;
+                const avaliacao_id = this.lastID; // O ID da avaliação acabada de criar
+                
+                // 5. A VERDADEIRA LÓGICA DE NEGÓCIO: GERAR ALERTAS CLÍNICOS
+                const LIMIAR = 24; // Guião CARAT oficial: < 24 = Controlo Insuficiente
+                const DELTA = 4;   // Regra de deterioração significativa (queda de 4 pontos)
 
-        // 3. Calcular score e interpretação
-        const { totalScore, interpretation } = computeCaratFromAnswers(payload.answers);
-
-        // 4. Gerar recomendações e próximo passo
-        const recommendations = recommendationsFromInterpretation(interpretation);
-        const nextStep = nextStepFromInterpretation(interpretation);
-
-        // 5. Consultar última avaliação do utente
-        db.get(
-            'SELECT score_total FROM AvaliacaoCARAT WHERE utente_id = ? ORDER BY data DESC LIMIT 1',
-            [utenteId],
-            (err, lastEval) => {
-                if (err) {
-                    return res.status(500).json({ erro: 'Erro ao consultar última avaliação', detalhes: err.message });
+                let motivoAlerta = null;
+                const deterioracao = lastEval ? (lastEval.score_total - score_total) : 0;
+                
+                if (score_total < LIMIAR) {
+                    motivoAlerta = `Score CARAT de ${score_total} (Abaixo do limiar de 24: Controlo Insuficiente). Requer reavaliação.`;
+                } else if (deterioracao >= DELTA) {
+                    motivoAlerta = `Deterioração significativa: O score caiu ${deterioracao} pontos face à última avaliação.`;
                 }
 
-                // 6. Guardar avaliação na base de dados
-                const respostasStr = JSON.stringify(payload.answers);
-                db.run(
-                    'INSERT INTO AvaliacaoCARAT (respostas, score_total, interpretacao, utente_id) VALUES (?, ?, ?, ?)',
-                    [respostasStr, totalScore, interpretation, utenteId],
-                    function (err) {
-                        if (err) {
-                            return res.status(500).json({ erro: 'Erro ao guardar avaliação', detalhes: err.message });
-                        }
-
-                        const avaliacaoId = this.lastID;
-                        // 7. Gerar alerta se necessário
-                        const LIMIAR = 16; // Exemplo: limiar de controlo insuficiente
-                        const DELTA = 4;   // Exemplo: deterioração relevante
-
-                        let alertaGerado = false;
-
-                        const deterioracao = lastEval ? (lastEval.score_total - totalScore) : 0;
-                        const motivo = (totalScore < LIMIAR)
-                            ? 'Score CARAT abaixo do limiar'
-                            : (deterioracao >= DELTA)
-                                ? 'Deterioração significativa face à última avaliação'
-                                : null;
-
-                        if (motivo) {
-                            alertaGerado = true;
-                            db.run(
-                                `INSERT INTO Alerta (tipo, prioridade, estado, motivo, medico_id, utente_id, avaliacao_id)
-                                 VALUES (?, ?, ?, ?, ?, ?, ?)`,
-                                [
-                                    'CARAT',
-                                    'Alta',
-                                    'NOVO',
-                                    motivo,
-                                    medicoId,
-                                    utenteId,
-                                    avaliacaoId
-                                ],
-                                function (err) {
-                                    if (err) {
-                                        // Erro ao criar alerta, mas avaliação foi criada
-                                        return res.status(201).json({
-                                            avaliacaoId,
-                                            score: totalScore,
-                                            interpretacao: interpretation,
-                                            recomendacoes: recommendations,
-                                            proximoPasso: nextStep,
-                                            alertaGerado: false,
-                                            erroAlerta: 'Erro ao criar alerta: ' + err.message
-                                        });
-                                    }
-                                    res.status(201).json({
-                                        avaliacaoId,
-                                        score: totalScore,
-                                        interpretacao: interpretation,
-                                        recomendacoes: recommendations,
-                                        proximoPasso: nextStep,
-                                        alertaGerado: true
-                                    });
-                                }
-                            );
-                        } else {
-                            res.status(201).json({
-                                avaliacaoId,
-                                score: totalScore,
-                                interpretacao: interpretation,
-                                recomendacoes: recommendations,
-                                proximoPasso: nextStep,
-                                alertaGerado: false
-                            });
-                        }
-                    }
-                );
-            }
-        );
+                // Se houver motivo para alerta, vamos gravá-lo na BD!
+                if (motivoAlerta) {
+                    const sqlAlerta = `INSERT INTO Alerta (tipo, prioridade, estado, motivo, data_criacao, utente_id, medico_id, avaliacao_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`;
+                    
+                    db.run(sqlAlerta, ['Alerta CARAT', 'Alta', 'NOVO', motivoAlerta, data_preenchimento, utente_id, medico_id, avaliacao_id], function(err) {
+                        if (err) console.error('Erro ao gerar alerta:', err);
+                        
+                        return res.status(201).json({
+                            mensagem: 'Avaliação submetida e ALERTA CLÍNICO gerado com sucesso!',
+                            score_total,
+                            interpretacao,
+                            alerta_gerado: true
+                        });
+                    });
+                } else {
+                    // Sem motivo para alerta (Score >= 24 e sem queda abrupta)
+                    return res.status(201).json({
+                        mensagem: 'Avaliação submetida com sucesso. Utente controlado.',
+                        score_total,
+                        interpretacao,
+                        alerta_gerado: false
+                    });
+                }
+            });
+        });
     });
 };

@@ -126,16 +126,19 @@
             </tbody>
         </table>
 
-        <button onclick="submeterQuestionario()">Submeter Avaliação</button>
+        <button type="button" onclick="submeterQuestionario(event)">Submeter Avaliação</button>
         
         <div id="resultado"></div>
     </div>
 
     <script>
-        // Adicionada a constante da API!
         const API_URL = 'http://localhost:3000';
 
-        function submeterQuestionario() {
+        // 👇 Recebe o 'event' do botão
+        function submeterQuestionario(event) {
+            // Bloqueia o comportamento padrão de dar refresh na página
+            if (event) event.preventDefault(); 
+
             const utente_id = document.getElementById('utente_id').value;
             if (!utente_id) return alert('Por favor, insira o ID do Utente.');
 
@@ -146,25 +149,41 @@
                 respostas.push(parseInt(resposta.value));
             }
 
-            // Atualizado com a API_URL
             fetch(`${API_URL}/avaliacoes`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                // 👇 AQUI ESTÁ A MAGIA! O parseInt(utente_id) resolve o bloqueio de segurança
                 body: JSON.stringify({ utente_id: parseInt(utente_id), respostas: respostas })
             })
             .then(res => res.json())
             .then(dados => {
                 const resultDiv = document.getElementById('resultado');
                 resultDiv.style.display = 'block';
+                
                 if (dados.erro) {
                     resultDiv.style.backgroundColor = '#f8d7da';
                     resultDiv.style.color = '#721c24';
                     resultDiv.innerText = 'Erro: ' + dados.erro;
                 } else {
-                    resultDiv.style.backgroundColor = '#d4edda';
-                    resultDiv.style.color = '#155724';
-                    resultDiv.innerHTML = `Avaliação guardada com sucesso! <br> Score Total: ${dados.score_total}`;
+                    // 👇 LÓGICA DE CORES DOS ALERTAS!
+                    if (dados.alerta_gerado) {
+                        resultDiv.style.backgroundColor = '#fff3cd'; // Amarelo
+                        resultDiv.style.color = '#856404'; // Texto amarelo escuro
+                        resultDiv.style.border = '2px solid #ffeeba';
+                    } else {
+                        resultDiv.style.backgroundColor = '#d4edda'; // Verde
+                        resultDiv.style.color = '#155724'; // Texto verde escuro
+                        resultDiv.style.border = 'none';
+                    }
+
+                    // 👇 Mostra a mensagem detalhada enviada pelo servidor
+                    resultDiv.innerHTML = `
+                        <h3 style="margin-top: 0; margin-bottom: 10px;">${dados.mensagem}</h3>
+                        <strong>Score Total:</strong> ${dados.score_total} <br>
+                        <strong>Interpretação:</strong> ${dados.interpretacao || 'N/A'}
+                    `;
+                    
+                    // Rola a página para baixo suavemente para garantir que vês a caixa
+                    resultDiv.scrollIntoView({ behavior: 'smooth' });
                 }
             })
             .catch(erro => console.error('Erro:', erro));
