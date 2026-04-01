@@ -10,6 +10,8 @@
 <body>
 
     <header class="main-header">
+        <button class="theme-toggle" onclick="toggleTheme()" id="btn-theme">🌙</button>
+        
         <div class="header-content">
             <h1>🏥 Clínica SaudINOB</h1>
             <p>Painel de Monitorização Respiratória</p>
@@ -31,12 +33,18 @@
         <div class="card card-danger">
             <h2>Alertas Clínicos <button class="btn-red" onclick="carregarAlertas()">↻ Atualizar</button></h2>
             <ul id="lista-alertas">
-                <li class="empty-state">Clique em atualizar para procurar alertas.</li>
+                <li class="empty-state">A carregar...</li>
             </ul>
         </div>
 
         <div class="card">
-            <h2>Resultados CARAT <button class="btn-green" onclick="carregarAvaliacoes()">↻ Atualizar</button></h2>
+            <h2 style="display: flex; gap: 10px; align-items: center; justify-content: space-between;">
+                Resultados CARAT 
+                <div>
+                    <button class="btn-blue" onclick="exportarParaCSV()">📥 Exportar Excel</button>
+                    <button class="btn-green" onclick="carregarAvaliacoes()">↻ Atualizar</button>
+                </div>
+            </h2>
             <ul id="lista-avaliacoes">
                 <li class="empty-state">Sem dados carregados.</li>
             </ul>
@@ -44,9 +52,19 @@
 
         <div class="card">
             <h2>Utentes Registados <button class="btn-blue" onclick="carregarUtentes()">↻ Atualizar</button></h2>
+            
+            <input type="text" id="pesquisa-utente" class="search-bar" placeholder="🔍 Pesquisar pelo nome..." onkeyup="filtrarUtentes()">
+            
             <ul id="lista-utentes">
                 <li class="empty-state">Sem dados carregados.</li>
             </ul>
+        </div>
+
+        <div class="card">
+            <h2>Estatísticas de Sintomas</h2>
+            <div style="position: relative; height: 250px; width: 100%; display: flex; justify-content: center; margin-top: 20px;">
+                <canvas id="graficoSintomas"></canvas>
+            </div>
         </div>
 
         <div class="card">
@@ -72,15 +90,7 @@
         </div>
     </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="app.js"></script>
-    <script>
-        // Carrega os dados automaticamente quando a página abre!
-        window.onload = () => {
-            carregarUtentes();
-            carregarAlertas();
-            carregarAvaliacoes();
-            carregarSintomas();
-        };
-    </script>
 </body>
 </html>

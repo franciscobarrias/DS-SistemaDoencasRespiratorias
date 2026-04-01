@@ -1,5 +1,5 @@
 :root {
-    --primary: #1e3a8a; /* Azul mais escuro e profissional */
+    --primary: #1e3a8a;
     --secondary: #3b82f6;
     --bg: #f3f4f6;
     --card-bg: #ffffff;
@@ -9,69 +9,96 @@
     --success: #10b981;
     --warning: #f59e0b;
     --danger: #ef4444;
-    --purple: #8b5cf6;
+}
+
+/* =========================================
+   🌙 VARIÁVEIS DO DARK MODE
+   ========================================= */
+[data-theme="dark"] {
+    --bg: #111827;
+    --card-bg: #1f2937;
+    --text-main: #f9fafb;
+    --text-muted: #9ca3af;
+    --primary: #60a5fa; 
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Poppins', sans-serif; }
 
+/* Transições suaves para o Dark Mode */
+body, .card, .kpi-card, input, select, li { 
+    transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease; 
+}
+
 body { background-color: var(--bg); color: var(--text-main); padding: 0 20px 40px; }
 
-/* Header Moderno */
+/* Header e Botão Theme */
 .main-header {
-    background: linear-gradient(135deg, var(--primary), var(--secondary));
-    color: white;
-    padding: 30px 20px;
-    border-radius: 0 0 20px 20px;
-    margin-bottom: 30px;
+    background: linear-gradient(135deg, #1e3a8a, #3b82f6);
+    color: white; padding: 30px 20px; border-radius: 0 0 20px 20px;
+    margin-bottom: 30px; text-align: center; position: relative;
     box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
-    text-align: center;
 }
-.main-header h1 { font-size: 28px; font-weight: 700; letter-spacing: -0.5px; }
-.main-header p { opacity: 0.8; font-weight: 300; margin-top: 5px; }
+.main-header h1 { font-size: 28px; font-weight: 700; }
+.main-header p { opacity: 0.8; font-weight: 300; }
 
-/* Grid de KPIs */
+.theme-toggle {
+    position: absolute; top: 25px; right: 30px;
+    background: rgba(255,255,255,0.2); border: none; font-size: 20px;
+    padding: 10px; border-radius: 50%; cursor: pointer; backdrop-filter: blur(5px);
+}
+.theme-toggle:hover { background: rgba(255,255,255,0.4); }
+
+/* KPIs */
 .kpi-grid { display: flex; gap: 20px; max-width: 1200px; margin: 0 auto 30px; }
 .kpi-card {
     flex: 1; background: var(--card-bg); padding: 20px; border-radius: 12px;
     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); text-align: center;
-    cursor: pointer; transition: transform 0.2s; border-top: 4px solid var(--secondary);
+    cursor: pointer; border-top: 4px solid var(--secondary);
 }
 .kpi-card:hover { transform: translateY(-3px); }
 .alert-kpi { border-top-color: var(--danger); }
 .kpi-card h3 { font-size: 14px; color: var(--text-muted); text-transform: uppercase; }
-.kpi-card p { font-size: 32px; font-weight: 700; color: var(--primary); margin-top: 10px; }
+.kpi-card p { font-size: 32px; font-weight: 700; color: var(--secondary); margin-top: 10px; }
 .alert-kpi p { color: var(--danger); }
 
 /* Dashboard Cards */
 .dashboard-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(450px, 1fr)); gap: 24px; max-width: 1200px; margin: 0 auto; }
 .card { background: var(--card-bg); border-radius: 16px; padding: 24px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); }
 .card h2 { font-size: 18px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--bg); padding-bottom: 10px; }
-.card-danger h2 { color: var(--danger); border-bottom-color: #fee2e2; }
 
 /* Botões */
-button { padding: 8px 16px; font-size: 13px; font-weight: 600; border: none; border-radius: 8px; cursor: pointer; transition: all 0.2s; }
-button:hover { opacity: 0.9; transform: scale(1.02); }
-.btn-blue { background-color: var(--secondary); color: white; }
-.btn-green { background-color: var(--success); color: white; }
-.btn-red { background-color: var(--danger); color: white; }
-.btn-orange { background-color: var(--warning); color: white; }
+button { padding: 8px 16px; font-size: 13px; font-weight: 600; border: none; border-radius: 8px; cursor: pointer; color: white; }
+button:hover { opacity: 0.9; }
+.btn-blue { background-color: var(--secondary); }
+.btn-green { background-color: var(--success); }
+.btn-red { background-color: var(--danger); }
+.btn-orange { background-color: var(--warning); }
 .full-width { width: 100%; padding: 12px; font-size: 15px; margin-top: 10px; }
 
-/* Listas e Badges */
+/* 🔍 Barra de Pesquisa */
+.search-bar {
+    width: 100%; padding: 12px; margin-bottom: 15px;
+    border-radius: 8px; border: 1px solid #d1d5db;
+    font-size: 14px; outline: none; background: var(--card-bg); color: var(--text-main);
+}
+.search-bar:focus { border-color: var(--secondary); }
+
+/* Listas e Formulários */
 ul { list-style: none; max-height: 300px; overflow-y: auto; padding-right: 5px; }
 ul::-webkit-scrollbar { width: 6px; }
 ul::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
-li { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; margin-bottom: 12px; padding: 15px; transition: background 0.2s; }
-li:hover { background: #f1f5f9; }
-.empty-state { text-align: center; color: var(--text-muted); border: 2px dashed #e2e8f0; background: transparent; }
+li { background: var(--bg); border: 1px solid #e2e8f0; border-radius: 10px; margin-bottom: 12px; padding: 15px; }
 
-/* Badges de Status */
+[data-theme="dark"] li { background: #374151; border-color: #4b5563; }
+[data-theme="dark"] input, [data-theme="dark"] select { border-color: #4b5563; }
+
+.empty-state { text-align: center; color: var(--text-muted); border: 2px dashed #e2e8f0; background: transparent !important; }
+
+/* Badges */
 .badge { display: inline-block; padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 600; margin-left: 8px; }
 .badge.leve { background: #d1fae5; color: #065f46; }
 .badge.moderada { background: #fef3c7; color: #92400e; }
 .badge.grave { background: #fee2e2; color: #991b1b; }
 
-/* Formulário */
 .form-group { display: flex; flex-direction: column; gap: 12px; }
-input, select { padding: 12px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 14px; transition: border-color 0.2s; outline: none; }
-input:focus, select:focus { border-color: var(--secondary); box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1); }
+input, select { padding: 12px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 14px; outline: none; background: var(--card-bg); color: var(--text-main); }
