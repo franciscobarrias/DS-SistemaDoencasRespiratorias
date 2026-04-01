@@ -3,57 +3,84 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard - SaudINOB</title>
+    <title>SaudINOB - Dashboard Clínico</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-    <header>
-        <h1>Bem-vindo à sua clínica</h1>
+    <header class="main-header">
+        <div class="header-content">
+            <h1>🏥 Clínica SaudINOB</h1>
+            <p>Painel de Monitorização Respiratória</p>
+        </div>
     </header>
 
+    <div class="kpi-grid">
+        <div class="kpi-card" onclick="carregarUtentes()">
+            <h3>👥 Total Utentes</h3>
+            <p id="kpi-utentes">-</p>
+        </div>
+        <div class="kpi-card alert-kpi" onclick="carregarAlertas()">
+            <h3>🚨 Alertas Ativos</h3>
+            <p id="kpi-alertas">-</p>
+        </div>
+    </div>
+
     <div class="dashboard-grid">
-        <div class="card">
-            <h2>Utentes Registados <button class="btn-blue" onclick="carregarUtentes()">Carregar</button></h2>
-            <ul id="lista-utentes">
-                <li style="text-align: center; color: #888; border: none;">Sem dados carregados.</li>
+        <div class="card card-danger">
+            <h2>Alertas Clínicos <button class="btn-red" onclick="carregarAlertas()">↻ Atualizar</button></h2>
+            <ul id="lista-alertas">
+                <li class="empty-state">Clique em atualizar para procurar alertas.</li>
             </ul>
         </div>
 
         <div class="card">
-            <h2>Resultados CARAT <button class="btn-green" onclick="carregarAvaliacoes()">Carregar</button></h2>
+            <h2>Resultados CARAT <button class="btn-green" onclick="carregarAvaliacoes()">↻ Atualizar</button></h2>
             <ul id="lista-avaliacoes">
-                <li style="text-align: center; color: #888; border: none;">Sem dados carregados.</li>
+                <li class="empty-state">Sem dados carregados.</li>
             </ul>
         </div>
 
         <div class="card">
-            <h2>Equipa Médica <button class="btn-purple" onclick="carregarMedicos()">Carregar</button></h2>
-            <ul id="lista-medicos">
-                <li style="text-align: center; color: #888; border: none;">Sem dados carregados.</li>
+            <h2>Utentes Registados <button class="btn-blue" onclick="carregarUtentes()">↻ Atualizar</button></h2>
+            <ul id="lista-utentes">
+                <li class="empty-state">Sem dados carregados.</li>
             </ul>
         </div>
 
         <div class="card">
-            <h2>Sintomas <button class="btn-orange" onclick="carregarSintomas()">Carregar</button></h2>
+            <h2>Sintomas Reportados <button class="btn-orange" onclick="carregarSintomas()">↻ Atualizar</button></h2>
             <ul id="lista-sintomas">
-                <li style="text-align: center; color: #888; border: none;">Sem dados carregados.</li>
+                <li class="empty-state">Sem dados carregados.</li>
             </ul>
         </div>
     
-        <div class="card" style="max-width: 600px; margin: 20px auto;">
-            <h2>Registar Sintoma</h2>
-            <input type="number" id="symp-utente-id" placeholder="ID do Utente" style="padding:8px; margin-bottom:10px;">
-            <input type="text" id="symp-descricao" placeholder="Ex: Dor, Inflamação" style="padding:8px; margin-bottom:10px;">
-            <select id="symp-severidade" style="padding:8px; margin-bottom:10px;">
-                <option value="Leve">Leve</option>
-                <option value="Moderada">Moderada</option>
-                <option value="Grave">Grave</option>
-            </select>
-            <button class="btn-orange" onclick="enviarSintoma()">Gravar na Base de Dados</button>
+        <div class="card form-card">
+            <h2>📝 Registar Novo Sintoma</h2>
+            <div class="form-group">
+                <input type="number" id="symp-utente-id" placeholder="ID do Utente">
+                <input type="text" id="symp-descricao" placeholder="Ex: Tosse persistente, Chiadeira">
+                <select id="symp-severidade">
+                    <option value="" disabled selected>Selecione a Severidade...</option>
+                    <option value="Leve">🟢 Leve</option>
+                    <option value="Moderada">🟡 Moderada</option>
+                    <option value="Grave">🔴 Grave</option>
+                </select>
+                <button class="btn-orange full-width" onclick="enviarSintoma()">Gravar no Sistema</button>
+            </div>
         </div>
     </div>
 
     <script src="app.js"></script>
+    <script>
+        // Carrega os dados automaticamente quando a página abre!
+        window.onload = () => {
+            carregarUtentes();
+            carregarAlertas();
+            carregarAvaliacoes();
+            carregarSintomas();
+        };
+    </script>
 </body>
 </html>

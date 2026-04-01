@@ -1,17 +1,12 @@
 {
-  "title": "CARATEvaluationRequest",
   "type": "object",
-  "required": ["answers"],
   "properties": {
+    "utente_id": { "type": "integer" },
     "answers": {
-      "type": "object",
-      "minProperties": 1,
-      "additionalProperties": {
-        "type": "integer",
-        "minimum": 0,
-        "maximum": 4
-      }
+      "type": "array",
+      "items": { "type": "integer", "minimum": 0, "maximum": 4 }
     }
   },
+  "required": ["utente_id", "answers"],
   "additionalProperties": false
 }

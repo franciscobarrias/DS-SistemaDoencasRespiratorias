@@ -1,20 +1,12 @@
 {
-  "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "AlertPatchRequest",
   "type": "object",
   "properties": {
-    "estado": {
-      "type": "string",
-      "enum": ["NOVO", "VISTO", "EM SEGUIMENTO", "FECHADO"]
-    },
-    "prioridade": {
-      "type": "string",
-      "enum": ["BAIXA", "MEDIA", "ALTA"]
-    }
+    "estado": { "type": "string", "enum": ["NOVO", "VISTO", "EM SEGUIMENTO", "RESOLVIDO"] },
+    "prioridade": { "type": "string", "enum": ["Baixa", "Normal", "Alta"] }
   },
-  "additionalProperties": false,
   "anyOf": [
     { "required": ["estado"] },
     { "required": ["prioridade"] }
-  ]
+  ],
+  "additionalProperties": false
 }

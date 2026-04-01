@@ -134,7 +134,6 @@
     <script>
         const API_URL = 'http://localhost:3000';
 
-        // 👇 Recebe o 'event' do botão
         function submeterQuestionario(event) {
             // Bloqueia o comportamento padrão de dar refresh na página
             if (event) event.preventDefault(); 
@@ -149,23 +148,29 @@
                 respostas.push(parseInt(resposta.value));
             }
 
+            // O nosso JSON schema exige a palavra 'answers' em vez de 'respostas'
+            const payload = { 
+                utente_id: parseInt(utente_id), 
+                answers: respostas 
+            };
+
             fetch(`${API_URL}/avaliacoes`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ utente_id: parseInt(utente_id), respostas: respostas })
+                body: JSON.stringify(payload)
             })
             .then(res => res.json())
             .then(dados => {
                 const resultDiv = document.getElementById('resultado');
                 resultDiv.style.display = 'block';
                 
-                if (dados.erro) {
+                if (dados.erro || dados.detalhes) {
                     resultDiv.style.backgroundColor = '#f8d7da';
                     resultDiv.style.color = '#721c24';
-                    resultDiv.innerText = 'Erro: ' + dados.erro;
+                    resultDiv.innerText = 'Erro: ' + (dados.erro || 'Falha ao processar.');
                 } else {
-                    // 👇 LÓGICA DE CORES DOS ALERTAS!
-                    if (dados.alerta_gerado) {
+                    // Lógica de cores baseada no alerta do Backend
+                    if (dados.alerta) {
                         resultDiv.style.backgroundColor = '#fff3cd'; // Amarelo
                         resultDiv.style.color = '#856404'; // Texto amarelo escuro
                         resultDiv.style.border = '2px solid #ffeeba';
@@ -175,7 +180,7 @@
                         resultDiv.style.border = 'none';
                     }
 
-                    // 👇 Mostra a mensagem detalhada enviada pelo servidor
+                    // Mostra a mensagem detalhada enviada pelo servidor
                     resultDiv.innerHTML = `
                         <h3 style="margin-top: 0; margin-bottom: 10px;">${dados.mensagem}</h3>
                         <strong>Score Total:</strong> ${dados.score_total} <br>
@@ -186,7 +191,7 @@
                     resultDiv.scrollIntoView({ behavior: 'smooth' });
                 }
             })
-            .catch(erro => console.error('Erro:', erro));
+            .catch(erro => console.error('Erro na submissão:', erro));
         }
     </script>
 </body>

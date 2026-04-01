@@ -1,19 +1,26 @@
 const sqlite3 = require('sqlite3').verbose();
-const path = require('path');
 
-// 1. Definir o caminho da base de dados (usando o .env ou o fallback)
-const dbPath = process.env.DB_PATH || path.join(__dirname, '../clinica.db');
+// 1. Caminho exato da base de dados (Igual ao do setup.js)
+const dbPath = process.env.DB_PATH || './clinica.db';
 
-// 2. Criar a ligação
+// 2. Estabelecer a ligação
 const db = new sqlite3.Database(dbPath, (err) => {
     if (err) {
         console.error('❌ Erro na ligação à base de dados:', err.message);
     } else {
-        console.log('✅ Base de dados ligada com sucesso.');
+        console.log('✅ Base de dados ligada com sucesso (clinica.db).');
         
-        // Ativar o suporte a chaves estrangeiras em cada ligação (Essencial!)
-        db.run("PRAGMA foreign_keys = ON;");
+        // 3. ATIVAR FOREIGN KEYS (Crítico para a base de dados!)
+        // O SQLite desativa as chaves estrangeiras por padrão. Temos de forçar a ativação.
+        db.run("PRAGMA foreign_keys = ON;", (err) => {
+            if (err) {
+                console.error('⚠️ Erro ao ativar chaves estrangeiras:', err.message);
+            } else {
+                console.log('🛡️ Suporte a chaves estrangeiras ativado.');
+            }
+        });
     }
 });
 
+// 4. Exportar a ligação para o resto do projeto (Controllers, etc.)
 module.exports = db;
