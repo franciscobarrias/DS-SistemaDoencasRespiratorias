@@ -3,130 +3,138 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Fast CARAT</title>
+    <title>SaudINOB - Avaliação CARAT</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
     <style>
-        :root { --primary: #1e5a8c; --bg: #f9f9f9; --text: #333; --border: #ddd; }
-        body { font-family: Arial, sans-serif; background-color: var(--bg); color: var(--text); padding: 20px; max-width: 900px; margin: 0 auto; }
-        .header { background: var(--primary); color: white; padding: 20px; text-align: center; border-radius: 5px 5px 0 0; }
-        .container { background: white; padding: 30px; border: 1px solid var(--border); border-top: none; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-        .section-title { font-weight: bold; margin-bottom: 20px; color: var(--primary); }
-        table { width: 100%; border-collapse: collapse; margin-bottom: 30px; }
-        th, td { padding: 12px; text-align: center; border-bottom: 1px solid var(--border); }
-        th { background-color: #f1f5f9; font-weight: normal; font-size: 14px; }
-        td.pergunta { text-align: left; font-weight: bold; width: 40%; }
-        input[type="radio"] { transform: scale(1.2); cursor: pointer; }
-        .id-container { margin-bottom: 25px; padding: 15px; background: #eef2f5; border-radius: 5px; }
-        .id-container input { padding: 8px; border: 1px solid #ccc; border-radius: 4px; width: 100px; }
-        button { background-color: var(--primary); color: white; padding: 15px 30px; border: none; font-size: 16px; border-radius: 5px; cursor: pointer; width: 100%; }
-        button:hover { background-color: #15426b; }
-        #resultado { margin-top: 20px; padding: 15px; text-align: center; font-weight: bold; display: none; border-radius: 4px; }
+        :root {
+            --primary: #1e3a8a;
+            --secondary: #3b82f6;
+            --bg: #f3f4f6;
+            --card-bg: #ffffff;
+            --text-main: #1f2937;
+            --text-muted: #6b7280;
+            --success: #10b981;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Poppins', sans-serif; }
+
+        body { background-color: var(--bg); color: var(--text-main); padding: 0 20px 40px; }
+
+        .header {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white; padding: 30px 20px; border-radius: 0 0 20px 20px;
+            margin-bottom: 30px; text-align: center;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        }
+
+        .header h1 { font-size: 24px; font-weight: 700; }
+        .header p { opacity: 0.9; font-size: 14px; margin-top: 5px; }
+
+        .container { max-width: 800px; margin: 0 auto; }
+
+        .info-card {
+            background: var(--card-bg); padding: 20px; border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); margin-bottom: 24px;
+            display: flex; align-items: center; gap: 15px; border-left: 5px solid var(--secondary);
+        }
+        
+        .info-card input {
+            padding: 10px; border: 1px solid #d1d5db; border-radius: 8px;
+            font-size: 16px; outline: none; width: 120px; text-align: center;
+        }
+        .info-card input:focus { border-color: var(--secondary); box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1); }
+
+        .section-title { font-size: 16px; color: var(--text-muted); margin-bottom: 15px; font-weight: 600; }
+
+        /* Cartões de Perguntas */
+        .question-card {
+            background: var(--card-bg); padding: 24px; border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); margin-bottom: 20px;
+            transition: all 0.3s ease; border: 1px solid transparent;
+        }
+        .question-card.error { border-color: var(--danger); background-color: #fef2f2; }
+        .question-card h3 { font-size: 16px; font-weight: 600; margin-bottom: 15px; color: var(--primary); }
+
+        /* Grelha de Botões (Substitui os Radio Buttons antigos) */
+        .options-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; }
+        
+        .options-grid label { cursor: pointer; }
+        .options-grid input[type="radio"] { display: none; /* Esconde a bolinha original */ }
+        
+        .option-btn {
+            display: flex; align-items: center; justify-content: center; text-align: center;
+            padding: 12px; border: 2px solid #e5e7eb; border-radius: 8px;
+            font-size: 13px; font-weight: 600; color: var(--text-muted);
+            transition: all 0.2s; height: 100%;
+        }
+        
+        .options-grid label:hover .option-btn { border-color: var(--secondary); background: #eff6ff; color: var(--secondary); }
+        
+        /* Quando Selecionado */
+        .options-grid input[type="radio"]:checked + .option-btn {
+            background: var(--secondary); border-color: var(--secondary); color: white;
+            box-shadow: 0 4px 6px -1px rgba(59, 130, 246, 0.4); transform: scale(1.02);
+        }
+
+        /* Botão de Submissão */
+        .btn-submit {
+            background: var(--success); color: white; width: 100%; padding: 16px;
+            border: none; border-radius: 12px; font-size: 16px; font-weight: 700;
+            cursor: pointer; transition: all 0.2s; margin-top: 10px;
+            box-shadow: 0 4px 6px -1px rgba(16, 185, 129, 0.4);
+        }
+        .btn-submit:hover { opacity: 0.9; transform: translateY(-2px); }
+        .btn-submit:disabled { background: #9ca3af; cursor: not-allowed; transform: none; box-shadow: none; }
+
+        /* Cartão de Resultado Final */
+        #resultado {
+            margin-top: 24px; padding: 20px; border-radius: 12px; display: none;
+            text-align: center; font-weight: 600; animation: fadeIn 0.5s ease;
+        }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        
+        .error-text { color: var(--danger); font-size: 14px; margin-top: 10px; display: none; text-align: center; }
+
     </style>
 </head>
 <body>
 
-    <div class="header">
-        <h1>Control of Allergic Rhinitis and Asthma Test</h1>
-    </div>
+    <header class="header">
+        <h1>🏥 Fast CARAT</h1>
+        <p>Control of Allergic Rhinitis and Asthma Test</p>
+    </header>
 
     <div class="container">
-        <div class="id-container">
-            <label><strong>ID do Utente:</strong></label>
-            <input type="number" id="utente_id" required>
+        
+        <div class="info-card">
+            <div>
+                <strong style="display:block; font-size: 14px; color: var(--text-muted);">Identificação</strong>
+                <label for="utente_id" style="font-size: 18px; color: var(--primary); font-weight: 600;">ID do Utente:</label>
+            </div>
+            <input type="number" id="utente_id" placeholder="Ex: 2" required>
         </div>
 
         <div class="section-title">Durante as últimas 4 semanas, por causa da sua asma/rinite/alergia quantas vezes, em média, teve:</div>
-        
-        <table>
-            <thead>
-                <tr>
-                    <th></th>
-                    <th>Nunca<br></th>
-                    <th>Até 2 dias<br>por semana<br></th>
-                    <th>Mais de 2 dias<br>por semana<br></th>
-                    <th>Quase todos os dias<br>ou todos os dias<br></th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr><td class="pergunta">1. Nariz entupido?</td>
-                    <td><input type="radio" name="p1" value="3"></td>
-                    <td><input type="radio" name="p1" value="2"></td>
-                    <td><input type="radio" name="p1" value="1"></td>
-                    <td><input type="radio" name="p1" value="0"></td>
-                </tr>
-                <tr><td class="pergunta">2. Espirros?</td>
-                    <td><input type="radio" name="p2" value="3"></td>
-                    <td><input type="radio" name="p2" value="2"></td>
-                    <td><input type="radio" name="p2" value="1"></td>
-                    <td><input type="radio" name="p2" value="0"></td>
-                </tr>
-                <tr><td class="pergunta">3. Comichão no nariz?</td>
-                    <td><input type="radio" name="p3" value="3"></td>
-                    <td><input type="radio" name="p3" value="2"></td>
-                    <td><input type="radio" name="p3" value="1"></td>
-                    <td><input type="radio" name="p3" value="0"></td>
-                </tr>
-                <tr><td class="pergunta">4. Nariz a pingar?</td>
-                    <td><input type="radio" name="p4" value="3"></td>
-                    <td><input type="radio" name="p4" value="2"></td>
-                    <td><input type="radio" name="p4" value="1"></td>
-                    <td><input type="radio" name="p4" value="0"></td>
-                </tr>
-                <tr><td class="pergunta">5. Falta de ar/dificuldade em respirar?</td>
-                    <td><input type="radio" name="p5" value="3"></td>
-                    <td><input type="radio" name="p5" value="2"></td>
-                    <td><input type="radio" name="p5" value="1"></td>
-                    <td><input type="radio" name="p5" value="0"></td>
-                </tr>
-                <tr><td class="pergunta">6. Pieira/chiadeira no peito?</td>
-                    <td><input type="radio" name="p6" value="3"></td>
-                    <td><input type="radio" name="p6" value="2"></td>
-                    <td><input type="radio" name="p6" value="1"></td>
-                    <td><input type="radio" name="p6" value="0"></td>
-                </tr>
-                <tr><td class="pergunta">7. Aperto no peito ao fazer esforço físico?</td>
-                    <td><input type="radio" name="p7" value="3"></td>
-                    <td><input type="radio" name="p7" value="2"></td>
-                    <td><input type="radio" name="p7" value="1"></td>
-                    <td><input type="radio" name="p7" value="0"></td>
-                </tr>
-                <tr><td class="pergunta">8. Cansaço/limitação nas tarefas do dia-a-dia?</td>
-                    <td><input type="radio" name="p8" value="3"></td>
-                    <td><input type="radio" name="p8" value="2"></td>
-                    <td><input type="radio" name="p8" value="1"></td>
-                    <td><input type="radio" name="p8" value="0"></td>
-                </tr>
-                <tr><td class="pergunta">9. Acordou durante a noite por causa da sua asma/rinite/alergia?</td>
-                    <td><input type="radio" name="p9" value="3"></td>
-                    <td><input type="radio" name="p9" value="2"></td>
-                    <td><input type="radio" name="p9" value="1"></td>
-                    <td><input type="radio" name="p9" value="0"></td>
-                </tr>
-            </tbody>
-        </table>
 
-        <div class="section-title">Durante as últimas 4 semanas, por causa da sua asma/rinite/alergia quantas vezes teve de:</div>
+        <div id="perguntas-gerais"></div>
 
-        <table>
-            <thead>
-                <tr>
-                    <th></th>
-                    <th>Não tomo<br>medicamentos<br></th>
-                    <th>Nunca<br></th>
-                    <th>Menos de 7 dias<br></th>
-                    <th>7 ou mais dias<br></th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr><td class="pergunta">10. Aumentar a utilização dos medicamentos?</td>
-                    <td><input type="radio" name="p10" value="3"></td>
-                    <td><input type="radio" name="p10" value="2"></td>
-                    <td><input type="radio" name="p10" value="1"></td>
-                    <td><input type="radio" name="p10" value="0"></td>
-                </tr>
-            </tbody>
-        </table>
+        <div class="section-title" style="margin-top: 30px;">Durante as últimas 4 semanas, por causa da sua asma/rinite/alergia quantas vezes teve de:</div>
 
-        <button type="button" onclick="submeterQuestionario(event)">Submeter Avaliação</button>
+        <div class="question-card" id="q10-card">
+            <h3>10. Aumentar a utilização dos medicamentos?</h3>
+            <div class="options-grid">
+                <label><input type="radio" name="p10" value="3"><div class="option-btn">Não tomo medicamentos</div></label>
+                <label><input type="radio" name="p10" value="2"><div class="option-btn">Nunca</div></label>
+                <label><input type="radio" name="p10" value="1"><div class="option-btn">Menos de 7 dias</div></label>
+                <label><input type="radio" name="p10" value="0"><div class="option-btn">7 ou mais dias</div></label>
+            </div>
+        </div>
+
+        <div id="erro-geral" class="error-text">⚠️ Por favor, responde a todas as perguntas destacadas a vermelho e preenche o ID.</div>
+
+        <button type="button" class="btn-submit" id="btn-enviar" onclick="submeterQuestionario(event)">🚀 Submeter Avaliação Clínica</button>
         
         <div id="resultado"></div>
     </div>
@@ -134,21 +142,80 @@
     <script>
         const API_URL = 'http://localhost:3000';
 
+        // 1. GERAR AS PERGUNTAS DE FORMA INTELIGENTE E LIMPA
+        const listaPerguntas = [
+            "Nariz entupido?", "Espirros?", "Comichão no nariz?", "Nariz a pingar?",
+            "Falta de ar/dificuldade em respirar?", "Pieira/chiadeira no peito?",
+            "Aperto no peito ao fazer esforço físico?", "Cansaço/limitação nas tarefas do dia-a-dia?",
+            "Acordou durante a noite por causa da sua asma/rinite/alergia?"
+        ];
+
+        const containerPerguntas = document.getElementById('perguntas-gerais');
+        
+        listaPerguntas.forEach((pergunta, index) => {
+            const num = index + 1;
+            containerPerguntas.innerHTML += `
+                <div class="question-card" id="q${num}-card">
+                    <h3>${num}. ${pergunta}</h3>
+                    <div class="options-grid">
+                        <label><input type="radio" name="p${num}" value="3"><div class="option-btn">Nunca</div></label>
+                        <label><input type="radio" name="p${num}" value="2"><div class="option-btn">Até 2 dias/semana</div></label>
+                        <label><input type="radio" name="p${num}" value="1"><div class="option-btn">Mais de 2 dias/semana</div></label>
+                        <label><input type="radio" name="p${num}" value="0"><div class="option-btn">Quase todos os dias</div></label>
+                    </div>
+                </div>
+            `;
+        });
+
+        // 2. LÓGICA DE SUBMISSÃO E VALIDAÇÃO VISUAL
         function submeterQuestionario(event) {
-            // Bloqueia o comportamento padrão de dar refresh na página
             if (event) event.preventDefault(); 
 
-            const utente_id = document.getElementById('utente_id').value;
-            if (!utente_id) return alert('Por favor, insira o ID do Utente.');
-
+            const utenteInput = document.getElementById('utente_id');
+            const utente_id = utenteInput.value;
+            const erroGeral = document.getElementById('erro-geral');
+            const btnEnviar = document.getElementById('btn-enviar');
+            
+            let temErro = false;
+            let primeiroErroElemento = null;
             const respostas = [];
-            for (let i = 1; i <= 10; i++) {
-                const resposta = document.querySelector(`input[name="p${i}"]:checked`);
-                if (!resposta) return alert(`Por favor, responda à Pergunta ${i}.`);
-                respostas.push(parseInt(resposta.value));
+
+            // Validar ID
+            if (!utente_id) {
+                utenteInput.style.borderColor = 'var(--danger)';
+                temErro = true;
+                primeiroErroElemento = utenteInput;
+            } else {
+                utenteInput.style.borderColor = '#d1d5db';
             }
 
-            // O nosso JSON schema exige a palavra 'answers' em vez de 'respostas'
+            // Validar as 10 Perguntas
+            for (let i = 1; i <= 10; i++) {
+                const card = document.getElementById(`q${i}-card`);
+                const resposta = document.querySelector(`input[name="p${i}"]:checked`);
+                
+                if (!resposta) {
+                    card.classList.add('error');
+                    temErro = true;
+                    if (!primeiroErroElemento) primeiroErroElemento = card;
+                } else {
+                    card.classList.remove('error');
+                    respostas.push(parseInt(resposta.value));
+                }
+            }
+
+            // Se faltar algo, avisa e faz scroll suave até ao erro
+            if (temErro) {
+                erroGeral.style.display = 'block';
+                primeiroErroElemento.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                return;
+            }
+
+            // Se tudo estiver bem, prepara o envio
+            erroGeral.style.display = 'none';
+            btnEnviar.innerText = '⏳ A processar...';
+            btnEnviar.disabled = true;
+
             const payload = { 
                 utente_id: parseInt(utente_id), 
                 answers: respostas 
@@ -165,33 +232,43 @@
                 resultDiv.style.display = 'block';
                 
                 if (dados.erro || dados.detalhes) {
-                    resultDiv.style.backgroundColor = '#f8d7da';
-                    resultDiv.style.color = '#721c24';
+                    resultDiv.style.backgroundColor = '#fef2f2';
+                    resultDiv.style.color = 'var(--danger)';
+                    resultDiv.style.border = '2px solid #fecaca';
                     resultDiv.innerText = 'Erro: ' + (dados.erro || 'Falha ao processar.');
                 } else {
-                    // Lógica de cores baseada no alerta do Backend
                     if (dados.alerta) {
-                        resultDiv.style.backgroundColor = '#fff3cd'; // Amarelo
-                        resultDiv.style.color = '#856404'; // Texto amarelo escuro
-                        resultDiv.style.border = '2px solid #ffeeba';
+                        resultDiv.style.backgroundColor = '#fffbeb'; 
+                        resultDiv.style.color = '#b45309'; 
+                        resultDiv.style.border = '2px solid #fde68a';
                     } else {
-                        resultDiv.style.backgroundColor = '#d4edda'; // Verde
-                        resultDiv.style.color = '#155724'; // Texto verde escuro
-                        resultDiv.style.border = 'none';
+                        resultDiv.style.backgroundColor = '#ecfdf5'; 
+                        resultDiv.style.color = '#047857'; 
+                        resultDiv.style.border = '2px solid #a7f3d0';
                     }
 
-                    // Mostra a mensagem detalhada enviada pelo servidor
                     resultDiv.innerHTML = `
-                        <h3 style="margin-top: 0; margin-bottom: 10px;">${dados.mensagem}</h3>
-                        <strong>Score Total:</strong> ${dados.score_total} <br>
-                        <strong>Interpretação:</strong> ${dados.interpretacao || 'N/A'}
+                        <h3 style="margin-bottom: 10px; font-size: 18px;">${dados.mensagem}</h3>
+                        <div style="font-size: 24px; font-weight: 700; margin-bottom: 5px;">Score: ${dados.score_total} / 30</div>
+                        <div style="font-size: 14px; opacity: 0.9;">${dados.interpretacao || 'N/A'}</div>
                     `;
                     
-                    // Rola a página para baixo suavemente para garantir que vês a caixa
-                    resultDiv.scrollIntoView({ behavior: 'smooth' });
+                    // Limpar formulário após sucesso
+                    document.querySelectorAll('input[type="radio"]').forEach(radio => radio.checked = false);
+                    utenteInput.value = '';
                 }
+                
+                resultDiv.scrollIntoView({ behavior: 'smooth', block: 'center' });
             })
-            .catch(erro => console.error('Erro na submissão:', erro));
+            .catch(erro => {
+                console.error('Erro na submissão:', erro);
+                alert('Erro de ligação ao servidor!');
+            })
+            .finally(() => {
+                // Restaurar o botão
+                btnEnviar.innerText = '🚀 Submeter Avaliação Clínica';
+                btnEnviar.disabled = false;
+            });
         }
     </script>
 </body>
