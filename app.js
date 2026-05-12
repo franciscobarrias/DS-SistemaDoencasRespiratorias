@@ -1,6 +1,10 @@
 const API_URL = 'http://localhost:3000';
 let graficoSintomasAtivo = null; 
 
+function corTema(variavel) {
+    return getComputedStyle(document.documentElement).getPropertyValue(variavel).trim();
+}
+
 // 🛡️ Prevenção contra XSS
 function escaparHTML(texto) {
     if (!texto) return '';
@@ -8,10 +12,6 @@ function escaparHTML(texto) {
     div.textContent = texto; 
     return div.innerHTML;
 }
-
-// ==========================================
-// 1. CARREGAMENTO DE DADOS (API FETCH)
-// ==========================================
 
 function carregarAlertas() {
     const lista = document.getElementById('lista-alertas');
@@ -215,6 +215,7 @@ function resolverAlerta(avaliacaoId) {
 function atualizarGrafico(leve, moderada, grave) {
     const ctx = document.getElementById('graficoSintomas');
     if (!ctx) return;
+    const corLegenda = corTema('--text-muted') || '#6b7280';
 
     if (graficoSintomasAtivo) {
         graficoSintomasAtivo.destroy();
@@ -235,7 +236,7 @@ function atualizarGrafico(leve, moderada, grave) {
             responsive: true,
             maintainAspectRatio: false,
             plugins: {
-                legend: { position: 'bottom', labels: { color: 'var(--text-muted)' } }
+                legend: { position: 'bottom', labels: { color: corLegenda } }
             }
         }
     });
@@ -258,6 +259,9 @@ function toggleTheme() {
         btn.innerText = '☀️';
         localStorage.setItem('tema', 'dark');
     }
+
+    // Recria o gráfico para aplicar a nova cor da legenda no canvas.
+    carregarSintomas();
 }
 
 function filtrarUtentes() {
