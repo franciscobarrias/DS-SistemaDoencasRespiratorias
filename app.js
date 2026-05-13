@@ -9,10 +9,6 @@ function escaparHTML(texto) {
     return div.innerHTML;
 }
 
-// ==========================================
-// 1. CARREGAMENTO DE DADOS (API FETCH)
-// ==========================================
-
 async function carregarAlertas() {
     const lista = document.getElementById('lista-alertas');
     const kpiAlertas = document.getElementById('kpi-alertas');
@@ -136,6 +132,7 @@ async function resolverAlerta(alertaId) {
 function atualizarGrafico(leve, moderada, grave) {
     const ctx = document.getElementById('graficoSintomas');
     if (!ctx) return;
+    const corLegenda = corTema('--text-muted') || '#6b7280';
 
     if (graficoSintomasAtivo) graficoSintomasAtivo.destroy();
 
