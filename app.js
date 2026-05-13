@@ -1,13 +1,19 @@
 const API_URL = 'http://localhost:3000';
 let graficoSintomasAtivo = null;
 
-// 🛡️ Prevenção contra XSS
+// ==========================================
+// 🛡️ PREVENÇÃO CONTRA XSS
+// ==========================================
 function escaparHTML(texto) {
     if (!texto) return '';
     const div = document.createElement('div');
     div.textContent = texto;
     return div.innerHTML;
 }
+
+// ==========================================
+// 1. CARREGAMENTO DE DADOS (API FETCH)
+// ==========================================
 
 async function carregarAlertas() {
     const lista = document.getElementById('lista-alertas');
@@ -17,7 +23,6 @@ async function carregarAlertas() {
     lista.innerHTML = '<li class="empty-state">A carregar alertas...</li>';
 
     try {
-        // Rota atualizada conforme o clinicaRoutes.js
         const res = await fetch(`${API_URL}/medico/alertas`);
         const alertas = await res.json();
 
@@ -54,7 +59,6 @@ async function carregarUtentes() {
     if (!lista) return;
 
     try {
-        // Nota: Garante que criaste esta rota GET /utentes no teu backend!
         const res = await fetch(`${API_URL}/utentes`);
         const dados = await res.json();
 
@@ -74,29 +78,48 @@ async function carregarUtentes() {
     }
 }
 
-async function carregarSintomas() {
+// 🛡️ CORRIGIDO: Anti-Cache Adicionado (força o pedido ao servidor)
+async function carregarSintomas(idDoUtente = 1) {
+    if (typeof idDoUtente !== 'number' && typeof idDoUtente !== 'string') {
+        idDoUtente = 1;
+    }
+
     const lista = document.getElementById('lista-sintomas');
     if (!lista) return;
 
     try {
-        // Rota baseada no utente_id (exemplo usando ID 1 para o dashboard geral)
-        const res = await fetch(`${API_URL}/sintomas/1`); 
+        // A MAGIA ESTÁ AQUI: O ?t=... cria um URL único e o cache: 'no-store' proíbe a memória
+        const urlRequest = `${API_URL}/sintomas/${idDoUtente}?t=${Date.now()}`;
+        const res = await fetch(urlRequest, { cache: 'no-store' }); 
+        
         const sintomas = await res.json();
 
         lista.innerHTML = '';
         let contagem = { Leve: 0, Moderada: 0, Grave: 0 };
 
+        if (sintomas.length === 0) {
+            lista.innerHTML = '<li class="empty-state">Sem sintomas registados.</li>';
+            atualizarGrafico(0, 0, 0); 
+            return;
+        }
+
         sintomas.forEach(s => {
-            contagem[s.severidade]++;
+            const severidade = s.severidade || 'Leve';
+            const descricao = s.descricao || 'Sem descrição';
+
+            if(contagem[severidade] !== undefined) {
+                contagem[severidade]++;
+            }
+
             const item = document.createElement('li');
-            let badgeClass = s.severidade.toLowerCase();
+            const badgeClass = severidade.toLowerCase();
 
             item.innerHTML = `
                 <div style="display:flex; justify-content: space-between;">
                     <strong>Sintoma</strong>
-                    <span class="badge ${badgeClass}">${s.severidade}</span>
+                    <span class="badge ${badgeClass}">${escaparHTML(severidade)}</span>
                 </div>
-                <div style="margin: 8px 0;">"${escaparHTML(s.descricao)}"</div>
+                <div style="margin: 8px 0;">"${escaparHTML(descricao)}"</div>
             `;
             lista.appendChild(item);
         });
@@ -104,6 +127,7 @@ async function carregarSintomas() {
         atualizarGrafico(contagem.Leve, contagem.Moderada, contagem.Grave);
     } catch (err) {
         console.error("Erro ao carregar sintomas:", err);
+        lista.innerHTML = '<li class="empty-state">Erro ao processar sintomas.</li>';
     }
 }
 
@@ -115,13 +139,55 @@ async function resolverAlerta(alertaId) {
     if (!confirm('Confirmas que a situação foi resolvida?')) return;
 
     try {
-        // Rota atualizada conforme clinicaRoutes.js (PUT /medico/alertas/:id/resolver)
         await fetch(`${API_URL}/medico/alertas/${alertaId}/resolver`, {
             method: 'PUT'
         });
         carregarAlertas();
     } catch (err) {
         alert("Erro ao resolver alerta.");
+    }
+}
+
+async function gravarNovoSintoma() {
+    const utenteId = document.getElementById('input-sintoma-utente').value;
+    const descricao = document.getElementById('input-sintoma-desc').value;
+    const severidade = document.getElementById('input-sintoma-sev').value;
+
+    if (!utenteId || !descricao) {
+        alert("Por favor, preenche o ID do Utente e a Descrição.");
+        return;
+    }
+
+    try {
+        const res = await fetch(`${API_URL}/sintomas`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                utente_id: parseInt(utenteId),
+                descricao: descricao,
+                severidade: severidade
+            })
+        });
+
+        if (res.ok) {
+            document.getElementById('input-sintoma-desc').value = '';
+            
+            // O ecrã vai obrigatoriamente forçar um refresh aos dados na base de dados
+            await carregarSintomas(utenteId); 
+            
+            setTimeout(() => {
+                alert("Sintoma gravado com sucesso!");
+            }, 10);
+            
+        } else {
+            const erroDoServidor = await res.text();
+            alert(`O Servidor recusou! (Erro HTTP ${res.status}): \n\nDetalhes:\n${erroDoServidor}`);
+        }
+    } catch (err) {
+        console.error("Erro no fetch:", err);
+        alert("Erro de comunicação com a API.");
     }
 }
 
@@ -132,7 +198,6 @@ async function resolverAlerta(alertaId) {
 function atualizarGrafico(leve, moderada, grave) {
     const ctx = document.getElementById('graficoSintomas');
     if (!ctx) return;
-    const corLegenda = corTema('--text-muted') || '#6b7280';
 
     if (graficoSintomasAtivo) graficoSintomasAtivo.destroy();
 
@@ -146,7 +211,15 @@ function atualizarGrafico(leve, moderada, grave) {
                 borderWidth: 0
             }]
         },
-        options: { responsive: true, maintainAspectRatio: false }
+        options: { 
+            responsive: true, 
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    labels: { color: '#6b7280' } 
+                }
+            }
+        }
     });
 }
 

@@ -41,8 +41,8 @@
             <h2 style="display: flex; gap: 10px; align-items: center; justify-content: space-between;">
                 Resultados CARAT 
                 <div>
-                    <button class="btn-blue" onclick="exportarParaCSV()">📥 Exportar Excel</button>
-                    <button class="btn-green" onclick="carregarAvaliacoes()">↻ Atualizar</button>
+                    <button class="btn-blue" onclick="exportarDadosCSV()">📥 Exportar Excel</button>
+                    <button class="btn-green" onclick="carregarResultadosCarat()">↻ Atualizar</button>
                 </div>
             </h2>
             <ul id="lista-avaliacoes">
@@ -77,15 +77,15 @@
         <div class="card form-card">
             <h2>📝 Registar Novo Sintoma</h2>
             <div class="form-group">
-                <input type="number" id="symp-utente-id" placeholder="ID do Utente">
-                <input type="text" id="symp-descricao" placeholder="Ex: Tosse persistente, Chiadeira">
-                <select id="symp-severidade">
+                <input type="number" id="input-sintoma-utente" placeholder="ID do Utente">
+                <input type="text" id="input-sintoma-desc" placeholder="Ex: Tosse persistente, Chiadeira">
+                <select id="input-sintoma-sev">
                     <option value="" disabled selected>Selecione a Severidade...</option>
                     <option value="Leve">🟢 Leve</option>
                     <option value="Moderada">🟡 Moderada</option>
                     <option value="Grave">🔴 Grave</option>
                 </select>
-                <button class="btn-orange full-width" onclick="enviarSintoma()">Gravar no Sistema</button>
+                <button class="btn-orange full-width" onclick="gravarNovoSintoma()">Gravar no Sistema</button>
             </div>
         </div>
     </div>

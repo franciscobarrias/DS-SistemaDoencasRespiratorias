@@ -95,6 +95,28 @@ const clinicaController = {
             if (err) return res.status(500).json({ error: err.message });
             res.json(rows);
         });
+    },
+
+    // ==========================================
+    // AS FUNÇÕES QUE FALTAVAM ESTÃO AQUI ABAIXO
+    // ==========================================
+
+    // Gravar um novo sintoma na Base de Dados (Resolve o Erro 404)
+    addSintoma: (req, res) => {
+        const { utente_id, descricao, severidade } = req.body;
+        db.run("INSERT INTO sintomas (utente_id, descricao, severidade) VALUES (?, ?, ?)",
+            [utente_id, descricao, severidade], function(err) {
+            if (err) return res.status(500).json({ error: err.message });
+            res.status(201).json({ id: this.lastID, mensagem: "Sintoma gravado com sucesso" });
+        });
+    },
+
+    // Listar as avaliações CARAT para alimentar a tabela do Dashboard
+    getAvaliacoes: (req, res) => {
+        db.all("SELECT * FROM avaliacoes_carat ORDER BY data DESC", [], (err, rows) => {
+            if (err) return res.status(500).json({ error: err.message });
+            res.json(rows);
+        });
     }
 };
 

@@ -1,21 +1,26 @@
-require('dotenv').config(); // Ligar o cofre de variáveis de ambiente
+require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
-const clinicaRoutes = require('./routes/clinicaRoutes'); // Importar o "mapa" de rotas
+const clinicaRoutes = require('./routes/clinicaRoutes'); 
+const clinicaController = require('./controllers/clinicaController'); // Trazemos o controlador diretamente para aqui
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Middlewares
 app.use(cors());
 app.use(express.json());
 app.use(express.static(path.join(__dirname)));
 
-// Diz ao servidor para usar as rotas que definimos na pasta "routes"
+// ========================================================
+// BYPASS DE EMERGÊNCIA: Forçar a rota diretamente no cérebro
+// ========================================================
+app.post('/sintomas', clinicaController.addSintoma);
+app.get('/sintomas/1', clinicaController.getSintomas); // Rota de teste para garantir que lê
+// ========================================================
+
 app.use('/', clinicaRoutes);
 
-// Ligar o Servidor
 app.listen(PORT, () => {
-    console.log(`Servidor a correr na porta http://localhost:${PORT}`);
+    console.log(`🚀 NOVO Servidor SaudINOB a correr na porta http://localhost:${PORT}`);
 });
