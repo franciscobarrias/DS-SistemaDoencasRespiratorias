@@ -1,43 +1,59 @@
--- 1. Limpeza (Drop) das tabelas antigas para garantir uma reconstrução limpa
+-- Limpeza inicial para reconstrução
+DROP TABLE IF EXISTS alertas;
+DROP TABLE IF EXISTS avaliacoes_carat;
 DROP TABLE IF EXISTS sintomas;
-DROP TABLE IF EXISTS avaliacoes;
 DROP TABLE IF EXISTS utentes;
 DROP TABLE IF EXISTS medicos;
 
--- 2. Tabela de Utentes (Os teus doentes)
-CREATE TABLE utentes (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    nome TEXT NOT NULL,
-    email TEXT UNIQUE,
-    telefone TEXT
-);
-
--- 3. Tabela de Médicos (Opcional, mas útil se tiveres a aba de médicos)
+-- Tabela de Médicos
 CREATE TABLE medicos (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     nome TEXT NOT NULL,
     especialidade TEXT,
-    email TEXT UNIQUE,
-    telefone TEXT
+    email TEXT UNIQUE
 );
 
--- 4. Tabela de Sintomas
+-- Tabela de Utentes (Com a coluna telefone corrigida)
+CREATE TABLE utentes (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    nome TEXT NOT NULL,
+    email TEXT UNIQUE,
+    telefone TEXT,
+    medico_id INTEGER,
+    FOREIGN KEY (medico_id) REFERENCES medicos (id)
+);
+
+-- Tabela de Avaliações (Onde guardamos o histórico clínico)
+CREATE TABLE avaliacoes_carat (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    utente_id INTEGER NOT NULL,
+    data DATETIME DEFAULT CURRENT_TIMESTAMP,
+    respostas TEXT NOT NULL, 
+    score_total INTEGER NOT NULL,
+    interpretacao TEXT,
+    conclusao TEXT,
+    FOREIGN KEY (utente_id) REFERENCES utentes (id) ON DELETE CASCADE
+);
+
+-- Tabela de Alertas (Entidade separada conforme o teu Modelo ER)
+CREATE TABLE alertas (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    utente_id INTEGER NOT NULL,
+    avaliacao_id INTEGER,
+    tipo TEXT NOT NULL,
+    prioridade TEXT NOT NULL,
+    estado TEXT DEFAULT 'NOVO', -- NOVO ou FECHADO
+    data_criacao DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (utente_id) REFERENCES utentes (id) ON DELETE CASCADE,
+    FOREIGN KEY (avaliacao_id) REFERENCES avaliacoes_carat (id) ON DELETE CASCADE
+);
+
+-- Tabela de Sintomas (Para o teu gráfico de donuts)
 CREATE TABLE sintomas (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     utente_id INTEGER NOT NULL,
     descricao TEXT NOT NULL,
     severidade TEXT NOT NULL,
-    -- A Foreign Key garante que não podes registar um sintoma para um utente que não existe!
-    FOREIGN KEY (utente_id) REFERENCES utentes (id) ON DELETE CASCADE
-);
-
--- 5. Tabela de Avaliações CARAT (Com a nova coluna "estado" para os alertas!)
-CREATE TABLE avaliacoes (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    utente_id INTEGER NOT NULL,
-    score_total INTEGER NOT NULL,
-    interpretacao TEXT,
-    data TEXT NOT NULL,
-    estado TEXT DEFAULT 'NOVO', -- O segredo para o botão "Resolver" funcionar!
+    data_registo DATE DEFAULT CURRENT_DATE,
     FOREIGN KEY (utente_id) REFERENCES utentes (id) ON DELETE CASCADE
 );

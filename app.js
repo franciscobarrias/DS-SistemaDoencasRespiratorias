@@ -1,11 +1,11 @@
 const API_URL = 'http://localhost:3000';
-let graficoSintomasAtivo = null; 
+let graficoSintomasAtivo = null;
 
 // 🛡️ Prevenção contra XSS
 function escaparHTML(texto) {
     if (!texto) return '';
     const div = document.createElement('div');
-    div.textContent = texto; 
+    div.textContent = texto;
     return div.innerHTML;
 }
 
@@ -13,212 +13,131 @@ function escaparHTML(texto) {
 // 1. CARREGAMENTO DE DADOS (API FETCH)
 // ==========================================
 
-function carregarAlertas() {
+async function carregarAlertas() {
     const lista = document.getElementById('lista-alertas');
+    const kpiAlertas = document.getElementById('kpi-alertas');
     if (!lista) return;
+
     lista.innerHTML = '<li class="empty-state">A carregar alertas...</li>';
-    
-    fetch(`${API_URL}/avaliacoes`) 
-        .then(res => res.json())
-        .then(dados => {
-            // Filtra scores < 24 e ignora os que já marcaste como resolvidos
-            const avaliacoesCriticas = dados.avaliacoes.filter(a => a.score_total < 24 && a.estado !== 'RESOLVIDO');
-            
-            const kpiAlertas = document.getElementById('kpi-alertas');
-            if (kpiAlertas) kpiAlertas.innerText = avaliacoesCriticas.length;
 
-            lista.innerHTML = '';
-            if (avaliacoesCriticas.length === 0) {
-                lista.innerHTML = '<li class="empty-state">✅ Sem alertas ativos. Excelente!</li>';
-                return;
-            }
+    try {
+        // Rota atualizada conforme o clinicaRoutes.js
+        const res = await fetch(`${API_URL}/medico/alertas`);
+        const alertas = await res.json();
 
-            avaliacoesCriticas.forEach(alerta => {
-                const item = document.createElement('li');
-                item.innerHTML = `
-                    <div style="display:flex; justify-content: space-between; align-items: center;">
-                        <strong>🚨 Utente ID: ${alerta.utente_id}</strong>
-                        <span class="badge grave">Crítico</span>
-                    </div>
-                    <div style="color: var(--text-muted); font-size: 13px; margin-top: 5px; margin-bottom: 12px;">
-                        Score CARAT de <strong>${alerta.score_total}</strong> detetado (${new Date(alerta.data).toLocaleDateString('pt-PT')}).
-                    </div>
-                    <button class="btn-green full-width" onclick="resolverAlerta(${alerta.id})">✅ Marcar como Resolvido</button>
-                `;
-                lista.appendChild(item);
-            });
-        }).catch(() => lista.innerHTML = '<li class="empty-state">Erro de ligação à API.</li>');
-}
+        if (kpiAlertas) kpiAlertas.innerText = alertas.length;
 
-function carregarAvaliacoes() {
-    const lista = document.getElementById('lista-avaliacoes');
-    if (!lista) return;
-    fetch(`${API_URL}/avaliacoes`)
-        .then(res => res.json())
-        .then(dados => {
-            lista.innerHTML = ''; 
-            if (dados.avaliacoes.length === 0) return lista.innerHTML = '<li class="empty-state">Sem dados.</li>';
+        lista.innerHTML = '';
+        if (alertas.length === 0) {
+            lista.innerHTML = '<li class="empty-state">✅ Sem alertas ativos.</li>';
+            return;
+        }
 
-            dados.avaliacoes.forEach(avaliacao => {
-                const item = document.createElement('li');
-                const corScore = avaliacao.score_total >= 24 ? 'var(--success)' : 'var(--danger)';
-                item.innerHTML = `
-                    <div style="display:flex; justify-content: space-between;">
-                        <strong>Utente ID: ${avaliacao.utente_id}</strong>
-                        <span style="font-size: 12px; color: var(--text-muted);">📅 ${new Date(avaliacao.data).toLocaleDateString('pt-PT')}</span>
-                    </div>
-                    <div style="margin-top: 8px;">
-                        Score: <strong style="color: ${corScore}; font-size: 16px;">${avaliacao.score_total}</strong> 
-                        <span style="color: var(--text-muted); font-size: 13px;">- ${escaparHTML(avaliacao.interpretacao)}</span>
-                    </div>
-                `;
-                lista.appendChild(item);
-            });
+        alertas.forEach(alerta => {
+            const item = document.createElement('li');
+            item.innerHTML = `
+                <div style="display:flex; justify-content: space-between; align-items: center;">
+                    <strong>🚨 Utente: ${escaparHTML(alerta.utente_nome)} (ID: ${alerta.utente_id})</strong>
+                    <span class="badge grave">${alerta.prioridade}</span>
+                </div>
+                <div style="color: var(--text-muted); font-size: 13px; margin-top: 5px; margin-bottom: 12px;">
+                    Motivo: <strong>${escaparHTML(alerta.tipo)}</strong> - ${new Date(alerta.data_criacao).toLocaleDateString('pt-PT')}
+                </div>
+                <button class="btn-green full-width" onclick="resolverAlerta(${alerta.id})">✅ Marcar como Resolvido</button>
+            `;
+            lista.appendChild(item);
         });
-}
-
-function carregarUtentes() {
-    const lista = document.getElementById('lista-utentes');
-    if (!lista) return;
-    fetch(`${API_URL}/utentes`)
-        .then(res => res.json())
-        .then(dados => {
-            const kpiUtentes = document.getElementById('kpi-utentes');
-            if (kpiUtentes) kpiUtentes.innerText = dados.utentes.length;
-            
-            lista.innerHTML = ''; 
-            dados.utentes.forEach(utente => {
-                const item = document.createElement('li');
-                item.innerHTML = `
-                    <strong>👤 ${escaparHTML(utente.nome)}</strong> <br> 
-                    <span style="color:var(--text-muted); font-size:13px;">📧 ${escaparHTML(utente.email)} | 📞 ${escaparHTML(utente.telefone)}</span>
-                `;
-                lista.appendChild(item);
-            });
-        });
-}
-
-function carregarSintomas() {
-    const lista = document.getElementById('lista-sintomas');
-    if (!lista) return;
-    fetch(`${API_URL}/sintomas`)
-        .then(res => res.json())
-        .then(dados => {
-            lista.innerHTML = ''; 
-            let contagem = { leve: 0, moderada: 0, grave: 0 };
-
-            dados.sintomas.forEach(sintoma => {
-                // Conta para o gráfico
-                if (sintoma.severidade === 'Leve') contagem.leve++;
-                if (sintoma.severidade === 'Moderada') contagem.moderada++;
-                if (sintoma.severidade === 'Grave') contagem.grave++;
-
-                // Gera a lista
-                const item = document.createElement('li');
-                let badgeClass = sintoma.severidade === 'Moderada' ? 'moderada' : (sintoma.severidade === 'Grave' ? 'grave' : 'leve');
-
-                item.innerHTML = `
-                    <div style="display:flex; justify-content: space-between;">
-                        <strong>Sintoma #${sintoma.id}</strong>
-                        <span class="badge ${badgeClass}">${escaparHTML(sintoma.severidade)}</span>
-                    </div>
-                    <div style="margin: 8px 0; color: var(--text-main);">"${escaparHTML(sintoma.descricao)}"</div>
-                    <div style="display:flex; justify-content: space-between; font-size: 12px; color: var(--text-muted);">
-                        <span>👤 ID Utente: ${sintoma.utente_id}</span>
-                        <button onclick="apagarSintoma(${sintoma.id})" style="background:transparent; color:var(--danger); padding:0;">🗑️ Apagar</button>
-                    </div>
-                `;
-                lista.appendChild(item);
-            });
-
-            // Atualiza o gráfico com os totais
-            atualizarGrafico(contagem.leve, contagem.moderada, contagem.grave);
-        });
-}
-
-function apagarSintoma(id) {
-    if (confirm('Tens a certeza que queres apagar este sintoma?')) {
-        fetch(`${API_URL}/sintomas/${id}`, { method: 'DELETE' }).then(() => carregarSintomas());
+    } catch (err) {
+        lista.innerHTML = '<li class="empty-state">Erro de ligação à API.</li>';
     }
 }
 
-function enviarSintoma() {
-    const utente_id = document.getElementById('symp-utente-id').value;
-    const descricao = document.getElementById('symp-descricao').value;
-    const severidade = document.getElementById('symp-severidade').value;
+async function carregarUtentes() {
+    const lista = document.getElementById('lista-utentes');
+    const kpiUtentes = document.getElementById('kpi-utentes');
+    if (!lista) return;
 
-    if (!utente_id || !descricao || !severidade) return alert("Preencha todos os campos!");
+    try {
+        // Nota: Garante que criaste esta rota GET /utentes no teu backend!
+        const res = await fetch(`${API_URL}/utentes`);
+        const dados = await res.json();
 
-    fetch(`${API_URL}/sintomas`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ utente_id: parseInt(utente_id), descricao, severidade })
-    }).then(() => {
-        document.getElementById('symp-descricao').value = '';
-        document.getElementById('symp-severidade').value = '';
-        carregarSintomas(); 
-    });
+        if (kpiUtentes) kpiUtentes.innerText = dados.length;
+
+        lista.innerHTML = '';
+        dados.forEach(utente => {
+            const item = document.createElement('li');
+            item.innerHTML = `
+                <strong>👤 ${escaparHTML(utente.nome)}</strong> <br> 
+                <span style="color:var(--text-muted); font-size:13px;">📧 ${escaparHTML(utente.email)} | 📞 ${escaparHTML(utente.telefone)}</span>
+            `;
+            lista.appendChild(item);
+        });
+    } catch (err) {
+        console.error("Erro ao carregar utentes:", err);
+    }
+}
+
+async function carregarSintomas() {
+    const lista = document.getElementById('lista-sintomas');
+    if (!lista) return;
+
+    try {
+        // Rota baseada no utente_id (exemplo usando ID 1 para o dashboard geral)
+        const res = await fetch(`${API_URL}/sintomas/1`); 
+        const sintomas = await res.json();
+
+        lista.innerHTML = '';
+        let contagem = { Leve: 0, Moderada: 0, Grave: 0 };
+
+        sintomas.forEach(s => {
+            contagem[s.severidade]++;
+            const item = document.createElement('li');
+            let badgeClass = s.severidade.toLowerCase();
+
+            item.innerHTML = `
+                <div style="display:flex; justify-content: space-between;">
+                    <strong>Sintoma</strong>
+                    <span class="badge ${badgeClass}">${s.severidade}</span>
+                </div>
+                <div style="margin: 8px 0;">"${escaparHTML(s.descricao)}"</div>
+            `;
+            lista.appendChild(item);
+        });
+
+        atualizarGrafico(contagem.Leve, contagem.Moderada, contagem.Grave);
+    } catch (err) {
+        console.error("Erro ao carregar sintomas:", err);
+    }
 }
 
 // ==========================================
-// 2. EXPORTAÇÃO E RESOLUÇÃO DE ALERTAS
+// 2. AÇÕES E RESOLUÇÃO
 // ==========================================
 
-function exportarParaCSV() {
-    fetch(`${API_URL}/avaliacoes`)
-        .then(res => res.json())
-        .then(dados => {
-            if (!dados.avaliacoes || dados.avaliacoes.length === 0) {
-                return alert("Não há dados para exportar!");
-            }
+async function resolverAlerta(alertaId) {
+    if (!confirm('Confirmas que a situação foi resolvida?')) return;
 
-            let csvContent = "ID Avaliacao,ID Utente,Data,Score Total,Interpretacao\n";
-            dados.avaliacoes.forEach(a => {
-                const dataFormatada = new Date(a.data).toLocaleDateString('pt-PT');
-                csvContent += `${a.id},${a.utente_id},${dataFormatada},${a.score_total},"${a.interpretacao}"\n`;
-            });
-
-            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-            const url = URL.createObjectURL(blob);
-            const link = document.createElement("a");
-            link.setAttribute("href", url);
-            link.setAttribute("download", "saudinob_relatorio_carat.csv");
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-        })
-        .catch(() => alert("Erro ao gerar o ficheiro Excel."));
-}
-
-function resolverAlerta(avaliacaoId) {
-    if (!confirm('Confirmas que a situação clínica deste utente foi resolvida?')) return;
-
-    fetch(`${API_URL}/alertas/${avaliacaoId}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ estado: "RESOLVIDO" })
-    })
-    .then(res => {
-        // Recarrega os alertas para o resolvido desaparecer do ecrã
-        carregarAlertas(); 
-    })
-    .catch(err => {
-        console.error("Erro ao resolver alerta:", err);
-        alert("Erro de comunicação com a API.");
-    });
+    try {
+        // Rota atualizada conforme clinicaRoutes.js (PUT /medico/alertas/:id/resolver)
+        await fetch(`${API_URL}/medico/alertas/${alertaId}/resolver`, {
+            method: 'PUT'
+        });
+        carregarAlertas();
+    } catch (err) {
+        alert("Erro ao resolver alerta.");
+    }
 }
 
 // ==========================================
-// 3. GRÁFICOS (CHART.JS)
+// 3. GRÁFICOS (CHART.JS) E INTERFACE
 // ==========================================
 
 function atualizarGrafico(leve, moderada, grave) {
     const ctx = document.getElementById('graficoSintomas');
     if (!ctx) return;
 
-    if (graficoSintomasAtivo) {
-        graficoSintomasAtivo.destroy();
-    }
+    if (graficoSintomasAtivo) graficoSintomasAtivo.destroy();
 
     graficoSintomasAtivo = new Chart(ctx, {
         type: 'doughnut',
@@ -227,65 +146,32 @@ function atualizarGrafico(leve, moderada, grave) {
             datasets: [{
                 data: [leve, moderada, grave],
                 backgroundColor: ['#10b981', '#f59e0b', '#ef4444'],
-                borderWidth: 0,
-                hoverOffset: 4
+                borderWidth: 0
             }]
         },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: { position: 'bottom', labels: { color: 'var(--text-muted)' } }
-            }
-        }
+        options: { responsive: true, maintainAspectRatio: false }
     });
 }
 
-// ==========================================
-// 4. INTERFACE (DARK MODE E PESQUISA)
-// ==========================================
-
 function toggleTheme() {
     const body = document.documentElement;
-    const btn = document.getElementById('btn-theme');
-    
-    if (body.getAttribute('data-theme') === 'dark') {
-        body.removeAttribute('data-theme');
-        btn.innerText = '🌙';
-        localStorage.setItem('tema', 'light');
-    } else {
-        body.setAttribute('data-theme', 'dark');
-        btn.innerText = '☀️';
-        localStorage.setItem('tema', 'dark');
-    }
-}
-
-function filtrarUtentes() {
-    const input = document.getElementById('pesquisa-utente').value.toLowerCase();
-    const lista = document.getElementById('lista-utentes');
-    const itens = lista.getElementsByTagName('li');
-
-    for (let i = 0; i < itens.length; i++) {
-        if (itens[i].classList.contains('empty-state')) continue;
-        const texto = itens[i].innerText.toLowerCase();
-        itens[i].style.display = texto.includes(input) ? "" : "none";
-    }
+    const isDark = body.getAttribute('data-theme') === 'dark';
+    body.setAttribute('data-theme', isDark ? 'light' : 'dark');
+    document.getElementById('btn-theme').innerText = isDark ? '🌙' : '☀️';
+    localStorage.setItem('tema', isDark ? 'light' : 'dark');
 }
 
 // ==========================================
-// 5. INICIALIZAÇÃO (ARRANQUE)
+// 4. INICIALIZAÇÃO
 // ==========================================
 
 window.onload = () => {
-    // Aplica o tema guardado
     if (localStorage.getItem('tema') === 'dark') {
         document.documentElement.setAttribute('data-theme', 'dark');
         document.getElementById('btn-theme').innerText = '☀️';
     }
     
-    // Liga os motores e carrega os dados
     carregarUtentes();
     carregarAlertas();
-    carregarAvaliacoes();
     carregarSintomas();
 };

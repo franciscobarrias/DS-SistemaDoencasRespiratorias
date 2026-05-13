@@ -2,28 +2,16 @@ const express = require('express');
 const router = express.Router();
 const clinicaController = require('../controllers/clinicaController');
 
-// Importar o nosso Middleware de Validação e os Contratos (Schemas)
-const validateBody = require('../middleware/jsonValidator');
-const caratSchema = require('../schemas/carat-request.schema.json');
-const alertSchema = require('../schemas/alert-patch.schema.json');
+// --- Rotas de Utentes ---
+router.get('/utentes', clinicaController.getAllUtentes);
+router.get('/utentes/:id/historico', clinicaController.getHistoricoUtente);
+router.post('/utentes/:id/carat', clinicaController.addAvaliacao);
 
-// ---------------------------------------------------
-// 🛣️ ROTAS DA API
-// ---------------------------------------------------
+// --- Rotas de Gestão Clínica (Médico) ---
+router.get('/medico/alertas', clinicaController.getAlertas);
+router.put('/medico/alertas/:id/resolver', clinicaController.resolverAlerta);
 
-// Rotas de Utentes
-router.get('/utentes', clinicaController.getUtentes);
-
-// Rotas de Avaliações (O POST usa o validador do CARAT!)
-router.get('/avaliacoes', clinicaController.getAvaliacoes);
-router.post('/avaliacoes', validateBody(caratSchema), clinicaController.addAvaliacao);
-
-// Rotas de Sintomas
-router.get('/sintomas', clinicaController.getSintomas);
-router.post('/sintomas', clinicaController.addSintoma);
-router.delete('/sintomas/:id', clinicaController.deleteSintoma);
-
-// Rota de Alertas (A Rota do botão "Resolver" - Usa o validador de Alertas!)
-router.patch('/alertas/:id', validateBody(alertSchema), clinicaController.atualizarAlerta);
+// --- Rotas de Sintomas ---
+router.get('/sintomas/:utente_id', clinicaController.getSintomas);
 
 module.exports = router;

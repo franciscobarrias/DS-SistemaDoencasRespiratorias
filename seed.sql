@@ -1,20 +1,23 @@
--- Limpeza inicial de segurança
-DELETE FROM sintomas;
-DELETE FROM avaliacoes;
-DELETE FROM utentes;
+-- 1. Inserir um Médico
+INSERT INTO medicos (nome, especialidade, email) 
+VALUES ('Dr. Francisco Barrias', 'Pneumologia', 'francisco.med@fmup.pt');
 
--- 1. Inserir Utentes de Teste
-INSERT INTO utentes (id, nome, email, telefone) VALUES 
-(1, 'João Silva', 'joao.silva@email.com', '912345678'),
-(2, 'Maria Santos', 'maria.santos@email.com', '987654321'),
-(3, 'Carlos Costa', 'carlos.costa@email.com', '965412387');
+-- 2. Inserir Utentes (Associados ao médico ID 1)
+INSERT INTO utentes (nome, email, telefone, medico_id) VALUES 
+('João Silva', 'joao.silva@email.com', '912345678', 1),
+('Maria Santos', 'maria.santos@email.com', '987654321', 1),
+('Carlos Costa', 'carlos.costa@email.com', '965412387', 1);
 
--- 2. Inserir Avaliações Iniciais (Uma Crítica para o alerta, outra Boa)
-INSERT INTO avaliacoes (utente_id, score_total, interpretacao, data, estado) VALUES 
-(1, 15, 'Asma/Rinite não controlada', '2026-04-01', 'NOVO'),
-(2, 28, 'Asma/Rinite controlada', '2026-04-01', 'RESOLVIDO');
+-- 3. Inserir uma Avaliação com Score Baixo (Para testar o alerta)
+INSERT INTO avaliacoes_carat (utente_id, respostas, score_total, interpretacao, conclusao) 
+VALUES (1, '[1,1,1,2,1,1,1,2,1,1]', 12, 'Não Controlada', 'Necessita de revisão clínica urgente.');
 
--- 3. Inserir Sintomas Iniciais (Para o Gráfico funcionar logo)
+-- 4. Inserir o Alerta correspondente à avaliação acima
+INSERT INTO alertas (utente_id, avaliacao_id, tipo, prioridade, estado) 
+VALUES (1, 1, 'Controlo Insuficiente', 'Alta', 'NOVO');
+
+-- 5. Inserir Sintomas para popular o gráfico
 INSERT INTO sintomas (utente_id, descricao, severidade) VALUES 
-(1, 'Acordou com falta de ar durante a noite', 'Grave'),
-(2, 'Espirros matinais ligeiros', 'Leve');
+(1, 'Pieira persistente', 'Grave'),
+(2, 'Espirros ocasionais', 'Leve'),
+(3, 'Tosse moderada ao exercício', 'Moderada');
