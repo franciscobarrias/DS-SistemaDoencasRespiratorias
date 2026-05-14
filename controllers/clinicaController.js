@@ -89,9 +89,12 @@ const clinicaController = {
     },
 
     // Obter sintomas de um utente (para o gráfico de donuts)
+    // 🛡️ CORRIGIDO: Força o SQLite a procurar texto E número
     getSintomas: (req, res) => {
-        const { utente_id } = req.params;
-        db.all("SELECT * FROM sintomas WHERE utente_id = ?", [utente_id], (err, rows) => {
+        const idTexto = String(req.params.utente_id);
+        const idNumero = parseInt(idTexto) || 0;
+        
+        db.all("SELECT * FROM sintomas WHERE utente_id = ? OR utente_id = ?", [idTexto, idNumero], (err, rows) => {
             if (err) return res.status(500).json({ error: err.message });
             res.json(rows);
         });
