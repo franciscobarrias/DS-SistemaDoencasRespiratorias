@@ -78,7 +78,6 @@ async function carregarUtentes() {
     }
 }
 
-// 🛡️ FUNÇÃO ADICIONADA: Carrega os resultados do CARAT para o Dashboard
 async function carregarAvaliacoes() {
     const lista = document.getElementById('lista-resultados') || document.getElementById('lista-avaliacoes');
     if (!lista) return;
@@ -96,7 +95,7 @@ async function carregarAvaliacoes() {
         avaliacoes.forEach(aval => {
             const item = document.createElement('li');
             const dataFormatada = new Date(aval.data).toLocaleDateString('pt-PT');
-            const corBadge = aval.score_total < 24 ? '#f59e0b' : '#10b981'; // Laranja se < 24, Verde se >= 24
+            const corBadge = aval.score_total < 24 ? '#f59e0b' : '#10b981'; 
 
             item.innerHTML = `
                 <div style="display:flex; justify-content: space-between; align-items: center;">
@@ -169,6 +168,44 @@ async function carregarSintomas(idDoUtente = 1) {
 // ==========================================
 // 2. AÇÕES E RESOLUÇÃO
 // ==========================================
+
+// 🛡️ A FUNÇÃO DE EXPORTAÇÃO ESTÁ AQUI
+async function exportarDadosCSV() {
+    try {
+        const res = await fetch(`${API_URL}/carat-resultados`);
+        const avaliacoes = await res.json();
+
+        if (avaliacoes.length === 0) {
+            alert("Não existem dados para exportar.");
+            return;
+        }
+
+        let csvContent = "ID Avaliação,ID Utente,Score Total,Interpretação,Data\n";
+
+        avaliacoes.forEach(aval => {
+            const dataFormatada = new Date(aval.data).toLocaleDateString('pt-PT');
+            const score = aval.score_total;
+            const interpretacao = aval.interpretacao || "N/A";
+            
+            csvContent += `${aval.id},${aval.utente_id},${score},"${interpretacao}",${dataFormatada}\n`;
+        });
+
+        // O "\uFEFF" garante que o Excel lê os acentos de português corretamente
+        const blob = new Blob(["\uFEFF" + csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        
+        const link = document.createElement("a");
+        link.setAttribute("href", url);
+        link.setAttribute("download", "resultados_carat.csv");
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+
+    } catch (err) {
+        console.error("Erro ao exportar Excel:", err);
+        alert("Erro ao tentar gerar o ficheiro.");
+    }
+}
 
 async function resolverAlerta(alertaId) {
     if (!confirm('Confirmas que a situação foi resolvida?')) return;
@@ -304,6 +341,6 @@ window.onload = () => {
     carregarUtentes();
     carregarAlertas();
     carregarSintomas();
-    carregarAvaliacoes(); // 🛡️ AGORA SIM: A função arranca quando abres a página!
+    carregarAvaliacoes(); 
     configurarPesquisa(); 
 };
