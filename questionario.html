@@ -221,12 +221,20 @@
                 answers: respostas 
             };
 
-            fetch(`${API_URL}/avaliacoes`, {
+            // 🛡️ CORRIGIDO: A Rota exata que definimos no backend!
+            fetch(`${API_URL}/utentes/${utente_id}/carat`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)
             })
-            .then(res => res.json())
+            .then(async res => {
+                // Se o servidor devolver erro, tentamos ler a mensagem
+                if (!res.ok) {
+                    const textoErro = await res.text();
+                    throw new Error(`Erro ${res.status}: ${textoErro}`);
+                }
+                return res.json();
+            })
             .then(dados => {
                 const resultDiv = document.getElementById('resultado');
                 resultDiv.style.display = 'block';
@@ -237,7 +245,7 @@
                     resultDiv.style.border = '2px solid #fecaca';
                     resultDiv.innerText = 'Erro: ' + (dados.erro || 'Falha ao processar.');
                 } else {
-                    if (dados.alerta) {
+                    if (dados.score_total < 24) { // Menos de 24 é controlo insuficiente no CARAT
                         resultDiv.style.backgroundColor = '#fffbeb'; 
                         resultDiv.style.color = '#b45309'; 
                         resultDiv.style.border = '2px solid #fde68a';
@@ -248,9 +256,9 @@
                     }
 
                     resultDiv.innerHTML = `
-                        <h3 style="margin-bottom: 10px; font-size: 18px;">${dados.mensagem}</h3>
+                        <h3 style="margin-bottom: 10px; font-size: 18px;">${dados.mensagem || "Avaliação submetida com sucesso!"}</h3>
                         <div style="font-size: 24px; font-weight: 700; margin-bottom: 5px;">Score: ${dados.score_total} / 30</div>
-                        <div style="font-size: 14px; opacity: 0.9;">${dados.interpretacao || 'N/A'}</div>
+                        <div style="font-size: 14px; opacity: 0.9;">${dados.interpretacao || 'Verifique o painel do médico para mais detalhes.'}</div>
                     `;
                     
                     // Limpar formulário após sucesso
@@ -262,7 +270,7 @@
             })
             .catch(erro => {
                 console.error('Erro na submissão:', erro);
-                alert('Erro de ligação ao servidor!');
+                alert('Erro de comunicação com o servidor! Confirma se a porta está correta.');
             })
             .finally(() => {
                 // Restaurar o botão

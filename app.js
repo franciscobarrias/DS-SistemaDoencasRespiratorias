@@ -78,7 +78,43 @@ async function carregarUtentes() {
     }
 }
 
-// 🛡️ CORRIGIDO: Anti-Cache Adicionado (força o pedido ao servidor)
+// 🛡️ FUNÇÃO ADICIONADA: Carrega os resultados do CARAT para o Dashboard
+async function carregarAvaliacoes() {
+    const lista = document.getElementById('lista-resultados') || document.getElementById('lista-avaliacoes');
+    if (!lista) return;
+
+    try {
+        const res = await fetch(`${API_URL}/carat-resultados`);
+        const avaliacoes = await res.json();
+
+        lista.innerHTML = '';
+        if (avaliacoes.length === 0) {
+            lista.innerHTML = '<li class="empty-state">Sem dados carregados.</li>';
+            return;
+        }
+
+        avaliacoes.forEach(aval => {
+            const item = document.createElement('li');
+            const dataFormatada = new Date(aval.data).toLocaleDateString('pt-PT');
+            const corBadge = aval.score_total < 24 ? '#f59e0b' : '#10b981'; // Laranja se < 24, Verde se >= 24
+
+            item.innerHTML = `
+                <div style="display:flex; justify-content: space-between; align-items: center;">
+                    <strong>📋 Utente ID: ${aval.utente_id}</strong>
+                    <span class="badge" style="background-color: ${corBadge}; color: white; padding: 4px 8px; border-radius: 12px;">Score: ${aval.score_total}</span>
+                </div>
+                <div style="color: var(--text-muted); font-size: 13px; margin-top: 5px;">
+                    📅 ${dataFormatada} - <em>${escaparHTML(aval.interpretacao)}</em>
+                </div>
+            `;
+            lista.appendChild(item);
+        });
+    } catch (err) {
+        console.error("Erro ao carregar avaliações:", err);
+        lista.innerHTML = '<li class="empty-state">Erro ao carregar resultados.</li>';
+    }
+}
+
 async function carregarSintomas(idDoUtente = 1) {
     if (typeof idDoUtente !== 'number' && typeof idDoUtente !== 'string') {
         idDoUtente = 1;
@@ -88,7 +124,6 @@ async function carregarSintomas(idDoUtente = 1) {
     if (!lista) return;
 
     try {
-        // A MAGIA ESTÁ AQUI: O ?t=... cria um URL único e o cache: 'no-store' proíbe a memória
         const urlRequest = `${API_URL}/sintomas/${idDoUtente}?t=${Date.now()}`;
         const res = await fetch(urlRequest, { cache: 'no-store' }); 
         
@@ -174,7 +209,6 @@ async function gravarNovoSintoma() {
         if (res.ok) {
             document.getElementById('input-sintoma-desc').value = '';
             
-            // O ecrã vai obrigatoriamente forçar um refresh aos dados na base de dados
             await carregarSintomas(utenteId); 
             
             setTimeout(() => {
@@ -192,7 +226,33 @@ async function gravarNovoSintoma() {
 }
 
 // ==========================================
-// 3. GRÁFICOS (CHART.JS) E INTERFACE
+// 3. PESQUISA EM TEMPO REAL
+// ==========================================
+function configurarPesquisa() {
+    const inputPesquisa = document.querySelector('input[placeholder*="Pesquisar"]');
+    if (!inputPesquisa) return; 
+
+    inputPesquisa.addEventListener('input', (evento) => {
+        const termoPesquisa = evento.target.value.toLowerCase();
+        const listaUtentes = document.getElementById('lista-utentes');
+        if (!listaUtentes) return;
+
+        const items = listaUtentes.getElementsByTagName('li');
+        
+        for (let i = 0; i < items.length; i++) {
+            const textoItem = items[i].textContent.toLowerCase();
+            
+            if (textoItem.includes(termoPesquisa)) {
+                items[i].style.display = ''; 
+            } else {
+                items[i].style.display = 'none';
+            }
+        }
+    });
+}
+
+// ==========================================
+// 4. GRÁFICOS (CHART.JS) E INTERFACE
 // ==========================================
 
 function atualizarGrafico(leve, moderada, grave) {
@@ -232,7 +292,7 @@ function toggleTheme() {
 }
 
 // ==========================================
-// 4. INICIALIZAÇÃO
+// 5. INICIALIZAÇÃO
 // ==========================================
 
 window.onload = () => {
@@ -244,4 +304,6 @@ window.onload = () => {
     carregarUtentes();
     carregarAlertas();
     carregarSintomas();
+    carregarAvaliacoes(); // 🛡️ AGORA SIM: A função arranca quando abres a página!
+    configurarPesquisa(); 
 };

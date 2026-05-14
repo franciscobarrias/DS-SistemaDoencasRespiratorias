@@ -41,8 +41,8 @@
             <h2 style="display: flex; gap: 10px; align-items: center; justify-content: space-between;">
                 Resultados CARAT 
                 <div>
-                    <button class="btn-blue" onclick="exportarDadosCSV()">📥 Exportar Excel</button>
-                    <button class="btn-green" onclick="carregarResultadosCarat()">↻ Atualizar</button>
+                    <button class="btn-blue" onclick="alert('Funcionalidade de exportação a desenvolver')">📥 Exportar Excel</button>
+                    <button class="btn-green" onclick="carregarAvaliacoes()">↻ Atualizar</button>
                 </div>
             </h2>
             <ul id="lista-avaliacoes">
@@ -53,7 +53,7 @@
         <div class="card">
             <h2>Utentes Registados <button class="btn-blue" onclick="carregarUtentes()">↻ Atualizar</button></h2>
             
-            <input type="text" id="pesquisa-utente" class="search-bar" placeholder="🔍 Pesquisar pelo nome..." onkeyup="filtrarUtentes()">
+            <input type="text" id="pesquisa-utente" class="search-bar" placeholder="🔍 Pesquisar pelo nome...">
             
             <ul id="lista-utentes">
                 <li class="empty-state">Sem dados carregados.</li>
@@ -91,6 +91,6 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="app.js"></script>
+    <script src="app.js?v=4"></script>
 </body>
 </html>
