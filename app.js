@@ -114,16 +114,13 @@ async function carregarAvaliacoes() {
     }
 }
 
-async function carregarSintomas(idDoUtente = 1) {
-    if (typeof idDoUtente !== 'number' && typeof idDoUtente !== 'string') {
-        idDoUtente = 1;
-    }
-
+// 🛡️ CORRIGIDO: Puxa TODOS os sintomas e mostra o ID do utente na lista
+async function carregarSintomas() {
     const lista = document.getElementById('lista-sintomas');
     if (!lista) return;
 
     try {
-        const urlRequest = `${API_URL}/sintomas/${idDoUtente}?t=${Date.now()}`;
+        const urlRequest = `${API_URL}/sintomas?t=${Date.now()}`;
         const res = await fetch(urlRequest, { cache: 'no-store' }); 
         
         const sintomas = await res.json();
@@ -150,7 +147,7 @@ async function carregarSintomas(idDoUtente = 1) {
 
             item.innerHTML = `
                 <div style="display:flex; justify-content: space-between;">
-                    <strong>Sintoma</strong>
+                    <strong>Sintoma (Utente ID: ${s.utente_id})</strong>
                     <span class="badge ${badgeClass}">${escaparHTML(severidade)}</span>
                 </div>
                 <div style="margin: 8px 0;">"${escaparHTML(descricao)}"</div>
@@ -169,7 +166,6 @@ async function carregarSintomas(idDoUtente = 1) {
 // 2. AÇÕES E RESOLUÇÃO
 // ==========================================
 
-// 🛡️ A FUNÇÃO DE EXPORTAÇÃO ESTÁ AQUI
 async function exportarDadosCSV() {
     try {
         const res = await fetch(`${API_URL}/carat-resultados`);
@@ -190,7 +186,6 @@ async function exportarDadosCSV() {
             csvContent += `${aval.id},${aval.utente_id},${score},"${interpretacao}",${dataFormatada}\n`;
         });
 
-        // O "\uFEFF" garante que o Excel lê os acentos de português corretamente
         const blob = new Blob(["\uFEFF" + csvContent], { type: 'text/csv;charset=utf-8;' });
         const url = URL.createObjectURL(blob);
         
@@ -246,7 +241,8 @@ async function gravarNovoSintoma() {
         if (res.ok) {
             document.getElementById('input-sintoma-desc').value = '';
             
-            await carregarSintomas(utenteId); 
+            // 🛡️ CORRIGIDO: Recarrega a lista de todos os sintomas sem pedir um ID
+            await carregarSintomas(); 
             
             setTimeout(() => {
                 alert("Sintoma gravado com sucesso!");

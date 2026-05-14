@@ -88,7 +88,7 @@ const clinicaController = {
         });
     },
 
-    // Obter sintomas de um utente (para o gráfico de donuts)
+    // Obter sintomas de um utente específico
     // 🛡️ CORRIGIDO: Força o SQLite a procurar texto E número
     getSintomas: (req, res) => {
         const idTexto = String(req.params.utente_id);
@@ -101,7 +101,17 @@ const clinicaController = {
     },
 
     // ==========================================
-    // AS FUNÇÕES QUE FALTAVAM ESTÃO AQUI ABAIXO
+    // 🛡️ NOVA FUNÇÃO: Trazer TODOS os sintomas (Para a visão Global)
+    // ==========================================
+    getAllSintomas: (req, res) => {
+        db.all("SELECT * FROM sintomas ORDER BY id DESC", [], (err, rows) => {
+            if (err) return res.status(500).json({ error: err.message });
+            res.json(rows);
+        });
+    },
+
+    // ==========================================
+    // AS FUNÇÕES RESTANTES ESTÃO AQUI ABAIXO
     // ==========================================
 
     // Gravar um novo sintoma na Base de Dados (Resolve o Erro 404)

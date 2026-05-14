@@ -13,11 +13,10 @@ app.use(express.json());
 app.use(express.static(path.join(__dirname)));
 
 // ========================================================
-// 🛡️ O NOSSO BYPASS CORRIGIDO:
-// Trocámos o "1" fixo pela variável ":utente_id".
-// Agora o servidor já não procura por utentes "undefined"!
+// 🛡️ O NOSSO BYPASS ATUALIZADO:
 // ========================================================
 app.post('/sintomas', clinicaController.addSintoma);
+app.get('/sintomas', clinicaController.getAllSintomas); // 🛡️ NOVA: Busca a lista completa de todos os utentes!
 app.get('/sintomas/:utente_id', clinicaController.getSintomas);
 // ========================================================
 
