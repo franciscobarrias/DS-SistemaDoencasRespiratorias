@@ -1,9 +1,7 @@
 const API_URL = 'http://localhost:3000';
 let graficoSintomasAtivo = null;
 
-// ==========================================
-// 🛡️ PREVENÇÃO CONTRA XSS
-// ==========================================
+
 function escaparHTML(texto) {
     if (!texto) return '';
     const div = document.createElement('div');
@@ -11,9 +9,6 @@ function escaparHTML(texto) {
     return div.innerHTML;
 }
 
-// ==========================================
-// 1. CARREGAMENTO DE DADOS (API FETCH)
-// ==========================================
 
 async function carregarAlertas() {
     const lista = document.getElementById('lista-alertas');
@@ -38,7 +33,7 @@ async function carregarAlertas() {
             const item = document.createElement('li');
             item.innerHTML = `
                 <div style="display:flex; justify-content: space-between; align-items: center;">
-                    <strong>🚨 Utente: ${escaparHTML(alerta.utente_nome)} (ID: ${alerta.utente_id})</strong>
+                    <strong>Utente: ${escaparHTML(alerta.utente_nome)} (ID: ${alerta.utente_id})</strong>
                     <span class="badge grave">${alerta.prioridade}</span>
                 </div>
                 <div style="color: var(--text-muted); font-size: 13px; margin-top: 5px; margin-bottom: 12px;">
@@ -68,7 +63,7 @@ async function carregarUtentes() {
         dados.forEach(utente => {
             const item = document.createElement('li');
             item.innerHTML = `
-                <strong>👤 ${escaparHTML(utente.nome)}</strong> <br> 
+                <strong>${escaparHTML(utente.nome)}</strong> <br> 
                 <span style="color:var(--text-muted); font-size:13px;">📧 ${escaparHTML(utente.email)} | 📞 ${escaparHTML(utente.telefone)}</span>
             `;
             lista.appendChild(item);
@@ -114,7 +109,6 @@ async function carregarAvaliacoes() {
     }
 }
 
-// 🛡️ CORRIGIDO: Puxa TODOS os sintomas e mostra o ID do utente na lista
 async function carregarSintomas() {
     const lista = document.getElementById('lista-sintomas');
     if (!lista) return;
@@ -162,9 +156,6 @@ async function carregarSintomas() {
     }
 }
 
-// ==========================================
-// 2. AÇÕES E RESOLUÇÃO
-// ==========================================
 
 async function exportarDadosCSV() {
     try {
@@ -241,7 +232,7 @@ async function gravarNovoSintoma() {
         if (res.ok) {
             document.getElementById('input-sintoma-desc').value = '';
             
-            // 🛡️ CORRIGIDO: Recarrega a lista de todos os sintomas sem pedir um ID
+    
             await carregarSintomas(); 
             
             setTimeout(() => {
@@ -258,9 +249,6 @@ async function gravarNovoSintoma() {
     }
 }
 
-// ==========================================
-// 3. PESQUISA EM TEMPO REAL
-// ==========================================
 function configurarPesquisa() {
     const inputPesquisa = document.querySelector('input[placeholder*="Pesquisar"]');
     if (!inputPesquisa) return; 
@@ -284,9 +272,6 @@ function configurarPesquisa() {
     });
 }
 
-// ==========================================
-// 4. GRÁFICOS (CHART.JS) E INTERFACE
-// ==========================================
 
 function atualizarGrafico(leve, moderada, grave) {
     const ctx = document.getElementById('graficoSintomas');
@@ -324,9 +309,6 @@ function toggleTheme() {
     localStorage.setItem('tema', isDark ? 'light' : 'dark');
 }
 
-// ==========================================
-// 5. INICIALIZAÇÃO
-// ==========================================
 
 window.onload = () => {
     if (localStorage.getItem('tema') === 'dark') {
