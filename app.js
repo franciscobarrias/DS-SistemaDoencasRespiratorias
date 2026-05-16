@@ -46,14 +46,13 @@ async function carregarAlertas() {
     }
 }
 
-// 🛡️ CORRIGIDO: Adicionado fura-cache para a lista atualizar na hora
 async function carregarUtentes() {
     const lista = document.getElementById('lista-utentes');
     const kpiUtentes = document.getElementById('kpi-utentes');
     if (!lista) return;
 
     try {
-        const res = await fetch(`${API_URL}/utentes?t=${Date.now()}`); 
+        const res = await fetch(`${API_URL}/utentes`);
         const dados = await res.json();
 
         if (kpiUtentes) kpiUtentes.innerText = dados.length;
@@ -72,9 +71,113 @@ async function carregarUtentes() {
     }
 }
 
-// ==========================================
-// 🛡️ NOVAS FUNÇÕES: GESTÃO DE UTENTES
-// ==========================================
+async function carregarAvaliacoes() {
+    const lista = document.getElementById('lista-resultados') || document.getElementById('lista-avaliacoes');
+    if (!lista) return;
+
+    try {
+        const res = await fetch(`${API_URL}/carat-resultados`);
+        const avaliacoes = await res.json();
+
+        lista.innerHTML = '';
+        if (avaliacoes.length === 0) {
+            lista.innerHTML = '<li class="empty-state">Sem dados carregados.</li>';
+            return;
+        }
+
+        avaliacoes.forEach(aval => {
+            const item = document.createElement('li');
+            const dataFormatada = new Date(aval.data).toLocaleDateString('pt-PT');
+            const corBadge = aval.score_total < 24 ? '#f59e0b' : '#10b981'; 
+
+            item.innerHTML = `
+                <div style="display:flex; justify-content: space-between; align-items: center;">
+                    <strong>📋 Utente ID: ${aval.utente_id}</strong>
+                    <span class="badge" style="background-color: ${corBadge}; color: white; padding: 4px 8px; border-radius: 12px;">Score: ${aval.score_total}</span>
+                </div>
+                <div style="color: var(--text-muted); font-size: 13px; margin-top: 5px;">
+                    📅 ${dataFormatada} - <em>${escaparHTML(aval.interpretacao)}</em>
+                </div>
+            `;
+            lista.appendChild(item);
+        });
+    } catch (err) {
+        console.error("Erro ao carregar avaliações:", err);
+        lista.innerHTML = '<li class="empty-state">Erro ao carregar resultados.</li>';
+    }
+}
+
+// 🛡️ CORRIGIDO: Adicionado o botão de eliminar sintoma (caixote do lixo)
+async function carregarSintomas() {
+    const lista = document.getElementById('lista-sintomas');
+    if (!lista) return;
+
+    try {
+        const urlRequest = `${API_URL}/sintomas?t=${Date.now()}`;
+        const res = await fetch(urlRequest, { cache: 'no-store' }); 
+        
+        const sintomas = await res.json();
+
+        lista.innerHTML = '';
+        let contagem = { Leve: 0, Moderada: 0, Grave: 0 };
+
+        if (sintomas.length === 0) {
+            lista.innerHTML = '<li class="empty-state">Sem sintomas registados.</li>';
+            atualizarGrafico(0, 0, 0); 
+            return;
+        }
+
+        sintomas.forEach(s => {
+            const severidade = s.severidade || 'Leve';
+            const descricao = s.descricao || 'Sem descrição';
+
+            if(contagem[severidade] !== undefined) {
+                contagem[severidade]++;
+            }
+
+            const item = document.createElement('li');
+            const badgeClass = severidade.toLowerCase();
+
+            item.innerHTML = `
+                <div style="display:flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <strong>Sintoma (Utente ID: ${s.utente_id})</strong>
+                        <span class="badge ${badgeClass}">${escaparHTML(severidade)}</span>
+                    </div>
+                    <button onclick="eliminarSintoma(${s.id})" style="background: transparent; border: none; font-size: 18px; cursor: pointer; color: #ef4444;" title="Eliminar Sintoma">🗑️</button>
+                </div>
+                <div style="margin: 8px 0;">"${escaparHTML(descricao)}"</div>
+            `;
+            lista.appendChild(item);
+        });
+
+        atualizarGrafico(contagem.Leve, contagem.Moderada, contagem.Grave);
+    } catch (err) {
+        console.error("Erro ao carregar sintomas:", err);
+        lista.innerHTML = '<li class="empty-state">Erro ao processar sintomas.</li>';
+    }
+}
+
+// 🛡️ NOVA FUNÇÃO: O "Motor" que diz ao servidor para apagar o sintoma
+async function eliminarSintoma(id) {
+    if (!confirm('Tens a certeza que queres eliminar este sintoma?')) return;
+
+    try {
+        const res = await fetch(`${API_URL}/sintomas/${id}`, {
+            method: 'DELETE'
+        });
+
+        if (res.ok) {
+            await carregarSintomas(); // Recarrega a tabela e o gráfico instantaneamente
+        } else {
+            alert("Erro ao eliminar o sintoma.");
+        }
+    } catch (err) {
+        console.error("Erro ao eliminar sintoma:", err);
+        alert("Erro de comunicação com a API.");
+    }
+}
+
 function toggleFormUtente() {
     const form = document.getElementById('form-novo-utente');
     if (form) {
@@ -115,93 +218,6 @@ async function gravarNovoUtente() {
     } catch (err) {
         console.error("Erro no fetch:", err);
         alert("Erro de comunicação com a API.");
-    }
-}
-
-// ==========================================
-// OUTRAS FUNÇÕES E GRÁFICOS
-// ==========================================
-
-async function carregarAvaliacoes() {
-    const lista = document.getElementById('lista-resultados') || document.getElementById('lista-avaliacoes');
-    if (!lista) return;
-
-    try {
-        const res = await fetch(`${API_URL}/carat-resultados`);
-        const avaliacoes = await res.json();
-
-        lista.innerHTML = '';
-        if (avaliacoes.length === 0) {
-            lista.innerHTML = '<li class="empty-state">Sem dados carregados.</li>';
-            return;
-        }
-
-        avaliacoes.forEach(aval => {
-            const item = document.createElement('li');
-            const dataFormatada = new Date(aval.data).toLocaleDateString('pt-PT');
-            const corBadge = aval.score_total < 24 ? '#f59e0b' : '#10b981'; 
-
-            item.innerHTML = `
-                <div style="display:flex; justify-content: space-between; align-items: center;">
-                    <strong>📋 Utente ID: ${aval.utente_id}</strong>
-                    <span class="badge" style="background-color: ${corBadge}; color: white; padding: 4px 8px; border-radius: 12px;">Score: ${aval.score_total}</span>
-                </div>
-                <div style="color: var(--text-muted); font-size: 13px; margin-top: 5px;">
-                    📅 ${dataFormatada} - <em>${escaparHTML(aval.interpretacao)}</em>
-                </div>
-            `;
-            lista.appendChild(item);
-        });
-    } catch (err) {
-        console.error("Erro ao carregar avaliações:", err);
-        lista.innerHTML = '<li class="empty-state">Erro ao carregar resultados.</li>';
-    }
-}
-
-async function carregarSintomas() {
-    const lista = document.getElementById('lista-sintomas');
-    if (!lista) return;
-
-    try {
-        const urlRequest = `${API_URL}/sintomas?t=${Date.now()}`;
-        const res = await fetch(urlRequest, { cache: 'no-store' }); 
-        
-        const sintomas = await res.json();
-
-        lista.innerHTML = '';
-        let contagem = { Leve: 0, Moderada: 0, Grave: 0 };
-
-        if (sintomas.length === 0) {
-            lista.innerHTML = '<li class="empty-state">Sem sintomas registados.</li>';
-            atualizarGrafico(0, 0, 0); 
-            return;
-        }
-
-        sintomas.forEach(s => {
-            const severidade = s.severidade || 'Leve';
-            const descricao = s.descricao || 'Sem descrição';
-
-            if(contagem[severidade] !== undefined) {
-                contagem[severidade]++;
-            }
-
-            const item = document.createElement('li');
-            const badgeClass = severidade.toLowerCase();
-
-            item.innerHTML = `
-                <div style="display:flex; justify-content: space-between;">
-                    <strong>Sintoma (Utente ID: ${s.utente_id})</strong>
-                    <span class="badge ${badgeClass}">${escaparHTML(severidade)}</span>
-                </div>
-                <div style="margin: 8px 0;">"${escaparHTML(descricao)}"</div>
-            `;
-            lista.appendChild(item);
-        });
-
-        atualizarGrafico(contagem.Leve, contagem.Moderada, contagem.Grave);
-    } catch (err) {
-        console.error("Erro ao carregar sintomas:", err);
-        lista.innerHTML = '<li class="empty-state">Erro ao processar sintomas.</li>';
     }
 }
 

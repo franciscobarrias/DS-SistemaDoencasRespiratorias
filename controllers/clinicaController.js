@@ -138,6 +138,15 @@ const clinicaController = {
         });
     },
 
+    // 🛡️ NOVA FUNÇÃO INTEGRADA: Eliminar o sintoma da Base de Dados
+    deleteSintoma: (req, res) => {
+        const { id } = req.params;
+        db.run("DELETE FROM sintomas WHERE id = ?", [id], function(err) {
+            if (err) return res.status(500).json({ error: err.message });
+            res.json({ message: "Sintoma eliminado com sucesso." });
+        });
+    },
+
     // Listar as avaliações CARAT para alimentar a tabela do Dashboard
     getAvaliacoes: (req, res) => {
         db.all("SELECT * FROM avaliacoes_carat ORDER BY data DESC", [], (err, rows) => {

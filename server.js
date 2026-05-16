@@ -15,10 +15,13 @@ app.use(express.static(path.join(__dirname)));
 // ========================================================
 // 🛡️ O NOSSO BYPASS: ROTAS DIRETAS
 // ========================================================
-app.post('/utentes', clinicaController.addUtente); // 🛡️ A ROTA QUE FALTAVA PARA GRAVAR UTENTES!
+app.post('/utentes', clinicaController.addUtente); 
 app.post('/sintomas', clinicaController.addSintoma);
 app.get('/sintomas', clinicaController.getAllSintomas); 
 app.get('/sintomas/:utente_id', clinicaController.getSintomas);
+
+// 🛡️ A ROTA QUE FALTAVA: Liga o botão 🗑️ à base de dados!
+app.delete('/sintomas/:id', clinicaController.deleteSintoma);
 // ========================================================
 
 app.use('/', clinicaRoutes);
