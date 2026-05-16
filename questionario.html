@@ -97,6 +97,14 @@
         
         .error-text { color: var(--danger); font-size: 14px; margin-top: 10px; display: none; text-align: center; }
 
+        /* Botão Nova Avaliação */
+        .btn-reset {
+            margin-top: 15px; padding: 10px 20px; border-radius: 8px; border: none; 
+            background: rgba(255, 255, 255, 0.9); color: #333; cursor: pointer; 
+            font-weight: bold; box-shadow: 0 2px 4px rgba(0,0,0,0.1); transition: 0.2s;
+        }
+        .btn-reset:hover { background: #ffffff; transform: scale(1.05); }
+
     </style>
 </head>
 <body>
@@ -108,33 +116,35 @@
 
     <div class="container">
         
-        <div class="info-card">
-            <div>
-                <strong style="display:block; font-size: 14px; color: var(--text-muted);">Identificação</strong>
-                <label for="utente_id" style="font-size: 18px; color: var(--primary); font-weight: 600;">ID do Utente:</label>
+        <form id="form-carat" onsubmit="submeterQuestionario(event)">
+            <div class="info-card">
+                <div>
+                    <strong style="display:block; font-size: 14px; color: var(--text-muted);">Identificação</strong>
+                    <label for="utente_id" style="font-size: 18px; color: var(--primary); font-weight: 600;">ID do Utente:</label>
+                </div>
+                <input type="number" id="utente_id" placeholder="Ex: 2" required>
             </div>
-            <input type="number" id="utente_id" placeholder="Ex: 2" required>
-        </div>
 
-        <div class="section-title">Durante as últimas 4 semanas, por causa da sua asma/rinite/alergia quantas vezes, em média, teve:</div>
+            <div class="section-title">Durante as últimas 4 semanas, por causa da sua asma/rinite/alergia quantas vezes, em média, teve:</div>
 
-        <div id="perguntas-gerais"></div>
+            <div id="perguntas-gerais"></div>
 
-        <div class="section-title" style="margin-top: 30px;">Durante as últimas 4 semanas, por causa da sua asma/rinite/alergia quantas vezes teve de:</div>
+            <div class="section-title" style="margin-top: 30px;">Durante as últimas 4 semanas, por causa da sua asma/rinite/alergia quantas vezes teve de:</div>
 
-        <div class="question-card" id="q10-card">
-            <h3>10. Aumentar a utilização dos medicamentos?</h3>
-            <div class="options-grid">
-                <label><input type="radio" name="p10" value="3"><div class="option-btn">Não tomo medicamentos</div></label>
-                <label><input type="radio" name="p10" value="2"><div class="option-btn">Nunca</div></label>
-                <label><input type="radio" name="p10" value="1"><div class="option-btn">Menos de 7 dias</div></label>
-                <label><input type="radio" name="p10" value="0"><div class="option-btn">7 ou mais dias</div></label>
+            <div class="question-card" id="q10-card">
+                <h3>10. Aumentar a utilização dos medicamentos?</h3>
+                <div class="options-grid">
+                    <label><input type="radio" name="p10" value="3"><div class="option-btn">Não tomo medicamentos</div></label>
+                    <label><input type="radio" name="p10" value="2"><div class="option-btn">Nunca</div></label>
+                    <label><input type="radio" name="p10" value="1"><div class="option-btn">Menos de 7 dias</div></label>
+                    <label><input type="radio" name="p10" value="0"><div class="option-btn">7 ou mais dias</div></label>
+                </div>
             </div>
-        </div>
 
-        <div id="erro-geral" class="error-text">⚠️ Por favor, responde a todas as perguntas destacadas a vermelho e preenche o ID.</div>
+            <div id="erro-geral" class="error-text">⚠️ Por favor, responde a todas as perguntas destacadas a vermelho e preenche o ID.</div>
 
-        <button type="button" class="btn-submit" id="btn-enviar" onclick="submeterQuestionario(event)">🚀 Submeter Avaliação Clínica</button>
+            <button type="submit" class="btn-submit" id="btn-enviar">🚀 Submeter Avaliação Clínica</button>
+        </form>
         
         <div id="resultado"></div>
     </div>
@@ -167,9 +177,18 @@
             `;
         });
 
+        // 🛡️ Função para limpar e reiniciar o questionário
+        function limparFormulario() {
+            document.querySelectorAll('input[type="radio"]').forEach(radio => radio.checked = false);
+            document.getElementById('utente_id').value = '';
+            document.getElementById('resultado').style.display = 'none';
+            document.getElementById('btn-enviar').style.display = 'block';
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
         // 2. LÓGICA DE SUBMISSÃO E VALIDAÇÃO VISUAL
         function submeterQuestionario(event) {
-            if (event) event.preventDefault(); 
+            if (event) event.preventDefault(); // Bloqueia o recarregamento automático da página
 
             const utenteInput = document.getElementById('utente_id');
             const utente_id = utenteInput.value;
@@ -221,7 +240,6 @@
                 answers: respostas 
             };
 
-            // 🛡️ CORRIGIDO: A Rota exata que definimos no backend!
             fetch(`${API_URL}/utentes/${utente_id}/carat`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -243,9 +261,10 @@
                     resultDiv.style.backgroundColor = '#fef2f2';
                     resultDiv.style.color = 'var(--danger)';
                     resultDiv.style.border = '2px solid #fecaca';
-                    resultDiv.innerText = 'Erro: ' + (dados.erro || 'Falha ao processar.');
+                    resultDiv.innerHTML = `Erro: ${dados.erro || 'Falha ao processar.'} 
+                                           <br><button class="btn-reset" onclick="limparFormulario()">Tentar Novamente</button>`;
                 } else {
-                    if (dados.score_total < 24) { // Menos de 24 é controlo insuficiente no CARAT
+                    if (dados.score_total < 24) { 
                         resultDiv.style.backgroundColor = '#fffbeb'; 
                         resultDiv.style.color = '#b45309'; 
                         resultDiv.style.border = '2px solid #fde68a';
@@ -255,25 +274,26 @@
                         resultDiv.style.border = '2px solid #a7f3d0';
                     }
 
+                    // O Score fica visível até clicares no botão "Nova Avaliação"
                     resultDiv.innerHTML = `
                         <h3 style="margin-bottom: 10px; font-size: 18px;">${dados.mensagem || "Avaliação submetida com sucesso!"}</h3>
-                        <div style="font-size: 24px; font-weight: 700; margin-bottom: 5px;">Score: ${dados.score_total} / 30</div>
-                        <div style="font-size: 14px; opacity: 0.9;">${dados.interpretacao || 'Verifique o painel do médico para mais detalhes.'}</div>
+                        <div style="font-size: 32px; font-weight: 700; margin-bottom: 5px;">Score: ${dados.score_total} / 30</div>
+                        <div style="font-size: 14px; opacity: 0.9; margin-bottom: 20px;">${dados.interpretacao || 'Verifique o painel do médico para mais detalhes.'}</div>
+                        <button type="button" class="btn-reset" onclick="limparFormulario()">🔄 Nova Avaliação</button>
                     `;
                     
-                    // Limpar formulário após sucesso
-                    document.querySelectorAll('input[type="radio"]').forEach(radio => radio.checked = false);
-                    utenteInput.value = '';
+                    // Esconde o botão grande original enquanto o score está aberto
+                    btnEnviar.style.display = 'none';
                 }
                 
                 resultDiv.scrollIntoView({ behavior: 'smooth', block: 'center' });
             })
             .catch(erro => {
                 console.error('Erro na submissão:', erro);
-                alert('Erro de comunicação com o servidor! Confirma se a porta está correta.');
+                alert('Erro de comunicação com o servidor! Confirma se o Backend está ligado.');
             })
             .finally(() => {
-                // Restaurar o botão
+                // Restaurar o botão (permanece escondido pelo css se sucesso, mas garantimos o estado)
                 btnEnviar.innerText = '🚀 Submeter Avaliação Clínica';
                 btnEnviar.disabled = false;
             });
