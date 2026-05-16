@@ -48,6 +48,7 @@ async function carregarAlertas() {
     }
 }
 
+// 🛡️ CORRIGIDO: Adicionado o ID à frente do nome do Utente
 async function carregarUtentes() {
     const lista = document.getElementById('lista-utentes');
     const kpiUtentes = document.getElementById('kpi-utentes');
@@ -63,7 +64,7 @@ async function carregarUtentes() {
         dados.forEach(utente => {
             const item = document.createElement('li');
             item.innerHTML = `
-                <strong>${escaparHTML(utente.nome)}</strong> <br> 
+                <strong>${escaparHTML(utente.nome)} (ID: ${utente.id})</strong> <br> 
                 <span style="color:var(--text-muted); font-size:13px;">📧 ${escaparHTML(utente.email)} | 📞 ${escaparHTML(utente.telefone)}</span>
             `;
             lista.appendChild(item);
