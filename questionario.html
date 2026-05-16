@@ -110,7 +110,7 @@
 <body>
 
     <header class="header">
-        <h1>🏥 Fast CARAT</h1>
+        <h1>Fast CARAT</h1>
         <p>Control of Allergic Rhinitis and Asthma Test</p>
     </header>
 
@@ -141,10 +141,9 @@
                 </div>
             </div>
 
-            <div id="erro-geral" class="error-text">⚠️ Por favor, responde a todas as perguntas destacadas a vermelho e preenche o ID.</div>
+        <div id="erro-geral" class="error-text">⚠️ Por favor, responde a todas as perguntas destacadas a vermelho e preenche o ID.</div>
 
-            <button type="submit" class="btn-submit" id="btn-enviar">🚀 Submeter Avaliação Clínica</button>
-        </form>
+        <button type="button" class="btn-submit" id="btn-enviar" onclick="submeterQuestionario(event)">🚀 Submeter Avaliação Clínica</button>
         
         <div id="resultado"></div>
     </div>
@@ -208,7 +207,7 @@
                 utenteInput.style.borderColor = '#d1d5db';
             }
 
-            // Validar as 10 Perguntas
+  
             for (let i = 1; i <= 10; i++) {
                 const card = document.getElementById(`q${i}-card`);
                 const resposta = document.querySelector(`input[name="p${i}"]:checked`);
@@ -223,7 +222,7 @@
                 }
             }
 
-            // Se faltar algo, avisa e faz scroll suave até ao erro
+         
             if (temErro) {
                 erroGeral.style.display = 'block';
                 primeiroErroElemento.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -232,7 +231,7 @@
 
             // Se tudo estiver bem, prepara o envio
             erroGeral.style.display = 'none';
-            btnEnviar.innerText = '⏳ A processar...';
+            btnEnviar.innerText = 'A processar...';
             btnEnviar.disabled = true;
 
             const payload = { 
@@ -240,6 +239,7 @@
                 answers: respostas 
             };
 
+            // 🛡️ CORRIGIDO: A Rota exata que definimos no backend!
             fetch(`${API_URL}/utentes/${utente_id}/carat`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -293,7 +293,7 @@
                 alert('Erro de comunicação com o servidor! Confirma se o Backend está ligado.');
             })
             .finally(() => {
-                // Restaurar o botão (permanece escondido pelo css se sucesso, mas garantimos o estado)
+                // Restaurar o botão
                 btnEnviar.innerText = '🚀 Submeter Avaliação Clínica';
                 btnEnviar.disabled = false;
             });
