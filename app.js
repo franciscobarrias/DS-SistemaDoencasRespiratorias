@@ -1,14 +1,12 @@
 const API_URL = 'http://localhost:3000';
 let graficoSintomasAtivo = null;
 
-
 function escaparHTML(texto) {
     if (!texto) return '';
     const div = document.createElement('div');
     div.textContent = texto;
     return div.innerHTML;
 }
-
 
 async function carregarAlertas() {
     const lista = document.getElementById('lista-alertas');
@@ -48,14 +46,14 @@ async function carregarAlertas() {
     }
 }
 
-// 🛡️ CORRIGIDO: Adicionado o ID à frente do nome do Utente
+// 🛡️ CORRIGIDO: Adicionado fura-cache para a lista atualizar na hora
 async function carregarUtentes() {
     const lista = document.getElementById('lista-utentes');
     const kpiUtentes = document.getElementById('kpi-utentes');
     if (!lista) return;
 
     try {
-        const res = await fetch(`${API_URL}/utentes`);
+        const res = await fetch(`${API_URL}/utentes?t=${Date.now()}`); 
         const dados = await res.json();
 
         if (kpiUtentes) kpiUtentes.innerText = dados.length;
@@ -73,6 +71,56 @@ async function carregarUtentes() {
         console.error("Erro ao carregar utentes:", err);
     }
 }
+
+// ==========================================
+// 🛡️ NOVAS FUNÇÕES: GESTÃO DE UTENTES
+// ==========================================
+function toggleFormUtente() {
+    const form = document.getElementById('form-novo-utente');
+    if (form) {
+        form.style.display = form.style.display === 'none' ? 'block' : 'none';
+    }
+}
+
+async function gravarNovoUtente() {
+    const nome = document.getElementById('input-utente-nome').value;
+    const email = document.getElementById('input-utente-email').value;
+    const telefone = document.getElementById('input-utente-tel').value;
+
+    if (!nome) {
+        alert("O Nome do utente é obrigatório.");
+        return;
+    }
+
+    try {
+        const res = await fetch(`${API_URL}/utentes`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ nome, email, telefone })
+        });
+
+        if (res.ok) {
+            document.getElementById('input-utente-nome').value = '';
+            document.getElementById('input-utente-email').value = '';
+            document.getElementById('input-utente-tel').value = '';
+            
+            toggleFormUtente(); 
+            await carregarUtentes(); 
+            
+            setTimeout(() => alert("Utente registado com sucesso!"), 10);
+        } else {
+            const erroDoServidor = await res.text();
+            alert(`Erro ao registar utente: ${erroDoServidor}`);
+        }
+    } catch (err) {
+        console.error("Erro no fetch:", err);
+        alert("Erro de comunicação com a API.");
+    }
+}
+
+// ==========================================
+// OUTRAS FUNÇÕES E GRÁFICOS
+// ==========================================
 
 async function carregarAvaliacoes() {
     const lista = document.getElementById('lista-resultados') || document.getElementById('lista-avaliacoes');
@@ -157,7 +205,6 @@ async function carregarSintomas() {
     }
 }
 
-
 async function exportarDadosCSV() {
     try {
         const res = await fetch(`${API_URL}/carat-resultados`);
@@ -233,7 +280,6 @@ async function gravarNovoSintoma() {
         if (res.ok) {
             document.getElementById('input-sintoma-desc').value = '';
             
-    
             await carregarSintomas(); 
             
             setTimeout(() => {
@@ -273,7 +319,6 @@ function configurarPesquisa() {
     });
 }
 
-
 function atualizarGrafico(leve, moderada, grave) {
     const ctx = document.getElementById('graficoSintomas');
     if (!ctx) return;
@@ -309,7 +354,6 @@ function toggleTheme() {
     document.getElementById('btn-theme').innerText = isDark ? '🌙' : '☀️';
     localStorage.setItem('tema', isDark ? 'light' : 'dark');
 }
-
 
 window.onload = () => {
     if (localStorage.getItem('tema') === 'dark') {

@@ -13,18 +13,18 @@
         <button class="theme-toggle" onclick="toggleTheme()" id="btn-theme">🌙</button>
         
         <div class="header-content">
-            <h1>Clínica SaudINOB</h1>
+            <h1>🏥 Clínica SaudINOB</h1>
             <p>Painel de Monitorização Respiratória</p>
         </div>
     </header>
 
     <div class="kpi-grid">
         <div class="kpi-card" onclick="carregarUtentes()">
-            <h3>Total Utentes</h3>
+            <h3>👥 Total Utentes</h3>
             <p id="kpi-utentes">-</p>
         </div>
         <div class="kpi-card alert-kpi" onclick="carregarAlertas()">
-            <h3>Alertas Ativos</h3>
+            <h3>🚨 Alertas Ativos</h3>
             <p id="kpi-alertas">-</p>
         </div>
     </div>
@@ -51,8 +51,26 @@
         </div>
 
         <div class="card">
-            <h2>Utentes Registados <button class="btn-blue" onclick="carregarUtentes()">↻ Atualizar</button></h2>
+            <h2 style="display: flex; gap: 10px; align-items: center; justify-content: space-between;">
+                Utentes Registados 
+                <div>
+                    <button class="btn-green" onclick="toggleFormUtente()">+ Novo</button>
+                    <button class="btn-blue" onclick="carregarUtentes()">↻ Atualizar</button>
+                </div>
+            </h2>
             
+            <div id="form-novo-utente" style="display: none; background: #f9fafb; padding: 15px; border-radius: 8px; margin-bottom: 15px; border: 1px solid #e5e7eb;">
+                <input type="text" id="input-utente-nome" placeholder="Nome Completo *" style="width: 100%; margin-bottom: 10px; padding: 8px; border: 1px solid #d1d5db; border-radius: 6px;">
+                <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+                    <input type="email" id="input-utente-email" placeholder="E-mail" style="flex: 1; padding: 8px; border: 1px solid #d1d5db; border-radius: 6px;">
+                    <input type="tel" id="input-utente-tel" placeholder="Telefone" style="flex: 1; padding: 8px; border: 1px solid #d1d5db; border-radius: 6px;">
+                </div>
+                <div style="display: flex; gap: 10px;">
+                    <button class="btn-green" onclick="gravarNovoUtente()" style="flex: 1; border:none; padding:8px; border-radius:6px; cursor:pointer;">Gravar Utente</button>
+                    <button class="btn-red" onclick="toggleFormUtente()" style="flex: 1; border:none; padding:8px; border-radius:6px; cursor:pointer;">Cancelar</button>
+                </div>
+            </div>
+
             <input type="text" id="pesquisa-utente" class="search-bar" placeholder="🔍 Pesquisar pelo nome...">
             
             <ul id="lista-utentes">
@@ -75,15 +93,15 @@
         </div>
     
         <div class="card form-card">
-            <h2>Registar Novo Sintoma</h2>
+            <h2>📝 Registar Novo Sintoma</h2>
             <div class="form-group">
                 <input type="number" id="input-sintoma-utente" placeholder="ID do Utente">
                 <input type="text" id="input-sintoma-desc" placeholder="Ex: Tosse persistente, Chiadeira">
                 <select id="input-sintoma-sev">
                     <option value="" disabled selected>Selecione a Severidade...</option>
-                    <option value="Leve">Leve</option>
-                    <option value="Moderada">Moderada</option>
-                    <option value="Grave">Grave</option>
+                    <option value="Leve">🟢 Leve</option>
+                    <option value="Moderada">🟡 Moderada</option>
+                    <option value="Grave">🔴 Grave</option>
                 </select>
                 <button class="btn-orange full-width" onclick="gravarNovoSintoma()">Gravar no Sistema</button>
             </div>
@@ -91,6 +109,6 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="app.js?v=6"></script>
+    <script src="app.js?v=8"></script>
 </body>
 </html>

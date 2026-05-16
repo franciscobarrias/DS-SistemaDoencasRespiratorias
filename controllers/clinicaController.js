@@ -10,6 +10,20 @@ const clinicaController = {
         });
     },
 
+    // 🛡️ NOVA FUNÇÃO: Gravar novo utente na base de dados
+    addUtente: (req, res) => {
+        const { nome, email, telefone } = req.body;
+        
+        // Validação básica
+        if (!nome) return res.status(400).json({ error: "Nome é obrigatório." });
+
+        db.run("INSERT INTO utentes (nome, email, telefone) VALUES (?, ?, ?)",
+            [nome, email || '', telefone || ''], function(err) {
+            if (err) return res.status(500).json({ error: err.message });
+            res.status(201).json({ id: this.lastID, mensagem: "Utente adicionado com sucesso" });
+        });
+    },
+
     // US06: Listar apenas Alertas Ativos (Estado NOVO)
     getAlertas: (req, res) => {
         const query = `
