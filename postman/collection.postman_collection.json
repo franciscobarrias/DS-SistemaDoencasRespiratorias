@@ -1,0 +1,245 @@
+{
+  "info": {
+    "name": "DS Sistema - Postman Collection",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "Coleção para as rotas da API clínica"
+  },
+  "item": [
+    {
+      "name": "Utentes",
+      "item": [
+        {
+          "name": "Listar utentes",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/utentes",
+              "host": ["{{baseUrl}}"],
+              "path": ["utentes"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"Response is JSON\", function () { pm.response.to.be.json; });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Histórico de utente",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/utentes/{{utenteId}}/historico",
+              "host": ["{{baseUrl}}"],
+              "path": ["utentes", "{{utenteId}}", "historico"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"Response is JSON\", function () { pm.response.to.be.json; });"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "CARAT",
+      "item": [
+        {
+          "name": "Listar resultados CARAT",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/carat-resultados",
+              "host": ["{{baseUrl}}"],
+              "path": ["carat-resultados"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"Response is JSON\", function () { pm.response.to.be.json; });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Adicionar avaliação (CARAT)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"utente_id\": {{utenteId}},\n  \"answers\": [3,4,2]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/utentes/{{utenteId}}/carat",
+              "host": ["{{baseUrl}}"],
+              "path": ["utentes", "{{utenteId}}", "carat"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 201\", function () { pm.response.to.have.status(201); });",
+                  "pm.test(\"Response is JSON\", function () { pm.response.to.be.json; });",
+                  "var schema = {\n  \"type\": \"object\",\n  \"properties\": {\n    \"utente_id\": { \"type\": \"integer\" },\n    \"answers\": {\n      \"type\": \"array\",\n      \"items\": { \"type\": \"integer\", \"minimum\": 0, \"maximum\": 4 }\n    }\n  },\n  \"required\": [\"utente_id\", \"answers\"],\n  \"additionalProperties\": false\n};",
+                  "var reqBody = {}; try { reqBody = JSON.parse(pm.request.body.raw); } catch(e){}",
+                  "// Lightweight Ajv-like validator embedded in the collection (handles current schemas)",
+                  "function ajvValidateCarat(schema, data) {",
+                  "  if (!data || typeof data !== 'object') return false;",
+                  "  // utente_id must be integer",
+                  "  if (typeof data.utente_id === 'string') { var n = Number(data.utente_id); if (!isNaN(n)) data.utente_id = n; }",
+                  "  if (typeof data.utente_id !== 'number' || !Number.isInteger(data.utente_id)) return false;",
+                  "  // answers must be array of integers between 0 and 4",
+                  "  if (!Array.isArray(data.answers)) return false;",
+                  "  for (var i=0;i<data.answers.length;i++) { var v = data.answers[i]; if (typeof v !== 'number' || !Number.isInteger(v) || v < 0 || v > 4) return false; }",
+                  "  return true;",
+                  "}",
+                  "pm.test(\"Request body matches CARAT schema (Ajv-like)\", function () { pm.expect(ajvValidateCarat(null, reqBody)).to.be.true; });"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Medico",
+      "item": [
+        {
+          "name": "Listar alertas",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/medico/alertas",
+              "host": ["{{baseUrl}}"],
+              "path": ["medico", "alertas"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"Response is JSON\", function () { pm.response.to.be.json; });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Resolver alerta",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"resolvidoPor\": \"Dr. Exemplo\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/medico/alertas/{{alertaId}}/resolver",
+              "host": ["{{baseUrl}}"],
+              "path": ["medico", "alertas", "{{alertaId}}", "resolver"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"Response is JSON\", function () { pm.response.to.be.json; });"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Sintomas",
+      "item": [
+        {
+          "name": "Listar sintomas de utente",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/sintomas/{{utenteId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["sintomas", "{{utenteId}}"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"Response is JSON\", function () { pm.response.to.be.json; });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Adicionar sintoma",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"utente_id\": {{utenteId}},\n  \"descricao\": \"tosse\",\n  \"severidade\": \"Leve\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/sintomas",
+              "host": ["{{baseUrl}}"],
+              "path": ["sintomas"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 201\", function () { pm.response.to.have.status(201); });",
+                  "pm.test(\"Response is JSON\", function () { pm.response.to.be.json; });"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

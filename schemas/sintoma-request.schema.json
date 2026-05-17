@@ -1,0 +1,10 @@
+{
+  "type": "object",
+  "properties": {
+    "utente_id": { "type": "integer" },
+    "descricao": { "type": "string" },
+    "severidade": { "type": "string", "enum": ["Leve", "Normal", "Grave"] }
+  },
+  "required": ["utente_id", "descricao", "severidade"],
+  "additionalProperties": false
+}

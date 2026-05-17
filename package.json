@@ -6,7 +6,8 @@
   "scripts": {
     "setup": "node setup.js",
     "start": "node server.js",
-    "test": "node --test"
+    "test": "node --test",
+    "test:postman": "newman run postman/collection.json -e postman/environment.json"
   },
   "repository": {
     "type": "git",
