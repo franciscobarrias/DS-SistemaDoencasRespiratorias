@@ -6,6 +6,34 @@
     <title>SaudINOB - Dashboard Clínico</title>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
+    <style>
+        /* Estilos do Modal da Ficha Clínica */
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.5); backdrop-filter: blur(4px);
+            display: none; justify-content: center; align-items: center; z-index: 2000;
+        }
+        .modal-clinico {
+            background: var(--card-bg, #ffffff); width: 90%; max-width: 900px; height: 85vh;
+            border-radius: 16px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.15);
+            display: flex; flex-direction: column; overflow: hidden;
+            animation: slideUp 0.3s ease;
+        }
+        @keyframes slideUp { from { transform: translateY(30px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        
+        .modal-header-clinico {
+            background: linear-gradient(135deg, var(--primary, #1e3a8a), var(--secondary, #3b82f6));
+            color: white; padding: 20px; display: flex; justify-content: space-between; align-items: center;
+        }
+        .modal-body-clinico { padding: 24px; overflow-y: auto; flex: 1; display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .modal-col-full { grid-column: span 2; }
+        .modal-subcard { background: #f9fafb; border: 1px solid #e5e7eb; padding: 15px; border-radius: 8px; }
+        
+        .btn-close-modal { background: transparent; border: none; color: white; font-size: 24px; cursor: pointer; }
+        .btn-close-modal:hover { transform: scale(1.1); }
+        .perfil-nome { font-size: 22px; font-weight: 700; }
+        .perfil-meta { font-size: 13px; opacity: 0.9; margin-top: 4px; }
+    </style>
 </head>
 <body>
 
@@ -108,7 +136,39 @@
         </div>
     </div>
 
+    <div id="modal-perfil" class="modal-overlay">
+        <div class="modal-clinico">
+            <div class="modal-header-clinico">
+                <div>
+                    <div class="perfil-nome" id="prof-nome">Nome do Utente</div>
+                    <div class="perfil-meta" id="prof-contactos">Email | Telefone</div>
+                </div>
+                <button class="btn-close-modal" onclick="fecharFichaClinica()">&times;</button>
+            </div>
+            <div class="modal-body-clinico">
+                <div class="modal-subcard modal-col-full" style="height: 300px;">
+                    <h3 style="color: var(--primary, #1e3a8a); margin-bottom: 10px; font-size: 15px;">📈 Evolução Temporal do Controlo Clínico (CARAT)</h3>
+                    <div style="position: relative; height: 230px; width: 100%;">
+                        <canvas id="graficoHistoricoUtente"></canvas>
+                    </div>
+                </div>
+                
+                <div class="modal-subcard">
+                    <h3 style="color: var(--primary, #1e3a8a); margin-bottom: 10px; font-size: 15px;">🔴 Sintomas Atuais Registados</h3>
+                    <ul id="prof-lista-sintomas" style="list-style: none; padding: 0;">
+                        </ul>
+                </div>
+
+                <div class="modal-subcard">
+                    <h3 style="color: var(--primary, #1e3a8a); margin-bottom: 10px; font-size: 15px;">📋 Histórico de Submissões</h3>
+                    <ul id="prof-lista-carat" style="list-style: none; padding: 0;">
+                        </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="app.js?v=11"></script>
+    <script src="app.js?v=12"></script>
 </body>
 </html>

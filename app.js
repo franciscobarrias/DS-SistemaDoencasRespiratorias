@@ -1,5 +1,6 @@
 const API_URL = 'http://localhost:3000';
 let graficoSintomasAtivo = null;
+let graficoHistoricoAtivo = null; // 🛡️ NOVA: Variável para o gráfico da Ficha Clínica
 
 function escaparHTML(texto) {
     if (!texto) return '';
@@ -46,13 +47,14 @@ async function carregarAlertas() {
     }
 }
 
+// 🛡️ CORRIGIDO: Adicionado o botão "👁️ Ver Ficha" na lista de utentes
 async function carregarUtentes() {
     const lista = document.getElementById('lista-utentes');
     const kpiUtentes = document.getElementById('kpi-utentes');
     if (!lista) return;
 
     try {
-        const res = await fetch(`${API_URL}/utentes`);
+        const res = await fetch(`${API_URL}/utentes?t=${Date.now()}`); 
         const dados = await res.json();
 
         if (kpiUtentes) kpiUtentes.innerText = dados.length;
@@ -61,8 +63,13 @@ async function carregarUtentes() {
         dados.forEach(utente => {
             const item = document.createElement('li');
             item.innerHTML = `
-                <strong>${escaparHTML(utente.nome)} (ID: ${utente.id})</strong> <br> 
-                <span style="color:var(--text-muted); font-size:13px;">📧 ${escaparHTML(utente.email)} | 📞 ${escaparHTML(utente.telefone)}</span>
+                <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+                    <div>
+                        <strong>${escaparHTML(utente.nome)} (ID: ${utente.id})</strong> <br> 
+                        <span style="color:var(--text-muted); font-size:13px;">📧 ${escaparHTML(utente.email)} | 📞 ${escaparHTML(utente.telefone)}</span>
+                    </div>
+                    <button class="btn-blue" onclick="abrirFichaClinica(${utente.id}, '${utente.nome.replace(/'/g, "\\'")}', '${escaparHTML(utente.email)}', '${escaparHTML(utente.telefone)}')">👁️ Ver Ficha</button>
+                </div>
             `;
             lista.appendChild(item);
         });
@@ -70,6 +77,127 @@ async function carregarUtentes() {
         console.error("Erro ao carregar utentes:", err);
     }
 }
+
+// ==========================================
+// 🛡️ FICHA CLÍNICA INDIVIDUAL (MODAL)
+// ==========================================
+async function abrirFichaClinica(id, nome, email, telefone) {
+    // Atualiza os dados demográficos no cabeçalho do Modal
+    document.getElementById('prof-nome').innerText = nome;
+    document.getElementById('prof-contactos').innerText = `📧 ${email} | 📞 ${telefone} | Módulo de Análise ID: ${id}`;
+    
+    const listaSintomas = document.getElementById('prof-lista-sintomas');
+    const listaCarat = document.getElementById('prof-lista-carat');
+    
+    listaSintomas.innerHTML = '<li>A carregar sintomas...</li>';
+    listaCarat.innerHTML = '<li>A carregar avaliações...</li>';
+    
+    // Mostra o Modal no ecrã
+    document.getElementById('modal-perfil').style.display = 'flex';
+
+    try {
+        // Dispara os dois pedidos HTTP em paralelo para ser mais rápido
+        const [resSintomas, resHistorico] = await Promise.all([
+            fetch(`${API_URL}/sintomas/${id}`),
+            fetch(`${API_URL}/utentes/${id}/history`)
+        ]);
+
+        const sintomas = await resSintomas.json();
+        const historico = await resHistorico.json();
+
+        // ---- Renderizar Sintomas Individuais ----
+        listaSintomas.innerHTML = '';
+        if (sintomas.length === 0) {
+            listaSintomas.innerHTML = '<li style="color:var(--text-muted); font-size:13px;">Nenhum sintoma ativo reportado.</li>';
+        } else {
+            sintomas.forEach(s => {
+                const corBadge = s.severidade === 'Grave' ? '#ef4444' : (s.severidade === 'Moderada' ? '#f59e0b' : '#10b981');
+                listaSintomas.innerHTML += `
+                    <li style="padding: 8px 0; border-bottom: 1px dashed #e5e7eb; font-size: 13px;">
+                        <span style="background:${corBadge}; color:white; padding:2px 6px; border-radius:4px; font-size:11px; font-weight:bold; margin-right:5px;">${s.severidade}</span>
+                        "${escaparHTML(s.descricao)}"
+                    </li>`;
+            });
+        }
+
+        // ---- Renderizar Histórico e Preparar o Gráfico de Linhas ----
+        listaCarat.innerHTML = '';
+        const labelsDatas = [];
+        const dadosScores = [];
+
+        if (historico.length === 0) {
+            listaCarat.innerHTML = '<li style="color:var(--text-muted); font-size:13px;">Nenhum teste CARAT realizado.</li>';
+            gerarGraficoEvolucao([], []); // Desenha gráfico vazio
+        } else {
+            historico.forEach(h => {
+                const dataFormatada = new Date(h.data).toLocaleDateString('pt-PT');
+                labelsDatas.push(dataFormatada);
+                dadosScores.push(h.score_total);
+
+                const corScore = h.score_total < 24 ? 'color:#ef4444' : 'color:#10b981';
+                listaCarat.innerHTML += `
+                    <li style="padding: 6px 0; border-bottom: 1px dashed #e5e7eb; font-size: 13px; display:flex; justify-content:space-between;">
+                        <span>📅 ${dataFormatada}</span>
+                        <strong style="${corScore}">Score: ${h.score_total}/30</strong>
+                    </li>`;
+            });
+            
+            // Desenha o gráfico temporal
+            gerarGraficoEvolucao(labelsDatas, dadosScores);
+        }
+
+    } catch (err) {
+        console.error("Erro ao carregar Ficha Clínica:", err);
+        listaSintomas.innerHTML = '<li>Erro ao ligar ao servidor.</li>';
+        listaCarat.innerHTML = '<li>Erro ao ligar ao servidor.</li>';
+    }
+}
+
+function fecharFichaClinica() {
+    document.getElementById('modal-perfil').style.display = 'none';
+}
+
+function gerarGraficoEvolucao(labels, dados) {
+    const ctx = document.getElementById('graficoHistoricoUtente');
+    if (!ctx) return;
+
+    if (graficoHistoricoAtivo) graficoHistoricoAtivo.destroy();
+
+    graficoHistoricoAtivo = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Score CARAT',
+                data: dados,
+                borderColor: '#3b82f6',
+                backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                borderWidth: 3,
+                tension: 0.2, // Linha ligeiramente curva
+                fill: true,
+                pointBackgroundColor: '#1e3a8a',
+                pointRadius: 5
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    min: 0,
+                    max: 30, // Score máximo do CARAT
+                    grid: { color: '#e5e7eb' },
+                    ticks: { stepSize: 5 }
+                },
+                x: { grid: { display: false } }
+            },
+            plugins: {
+                legend: { display: false } 
+            }
+        }
+    });
+}
+// ==========================================
 
 async function carregarAvaliacoes() {
     const lista = document.getElementById('lista-resultados') || document.getElementById('lista-avaliacoes');
@@ -107,7 +235,6 @@ async function carregarAvaliacoes() {
     }
 }
 
-// 🛡️ CORRIGIDO: Adicionado o botão de eliminar sintoma (caixote do lixo)
 async function carregarSintomas() {
     const lista = document.getElementById('lista-sintomas');
     if (!lista) return;
@@ -158,7 +285,6 @@ async function carregarSintomas() {
     }
 }
 
-// 🛡️ NOVA FUNÇÃO: O "Motor" que diz ao servidor para apagar o sintoma
 async function eliminarSintoma(id) {
     if (!confirm('Tens a certeza que queres eliminar este sintoma?')) return;
 
@@ -168,7 +294,7 @@ async function eliminarSintoma(id) {
         });
 
         if (res.ok) {
-            await carregarSintomas(); // Recarrega a tabela e o gráfico instantaneamente
+            await carregarSintomas(); 
         } else {
             alert("Erro ao eliminar o sintoma.");
         }

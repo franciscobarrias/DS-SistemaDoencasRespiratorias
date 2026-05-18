@@ -4,7 +4,8 @@ const clinicaController = require('../controllers/clinicaController');
 
 // --- Rotas de Utentes ---
 router.get('/utentes', clinicaController.getAllUtentes);
-router.get('/utentes/:id/historico', clinicaController.getHistoricoUtente);
+router.post('/utentes', clinicaController.addUtente); // 🛡️ NOVA: Criar novo utente
+router.get('/utentes/:id/history', clinicaController.getHistoricoUtente); // 🛡️ CORRIGIDO: Alterado para 'history' para a Ficha Clínica funcionar
 
 // --- Rotas de Avaliações CARAT ---
 router.get('/carat-resultados', clinicaController.getAvaliacoes);
@@ -15,9 +16,9 @@ router.get('/medico/alertas', clinicaController.getAlertas);
 router.put('/medico/alertas/:id/resolver', clinicaController.resolverAlerta);
 
 // --- Rotas de Sintomas ---
-router.get('/sintomas/:utente_id', clinicaController.getSintomas);
-
-// 👇 A LINHA QUE ESTAVA A CAUSAR O ERRO 404 É ESTA 👇
-router.post('/sintomas', clinicaController.addSintoma);
+router.get('/sintomas', clinicaController.getAllSintomas); // 🛡️ NOVA: Listar todos os sintomas globais
+router.get('/sintomas/:utente_id', clinicaController.getSintomas); // Listar sintomas de um utente
+router.post('/sintomas', clinicaController.addSintoma); // Gravar novo sintoma
+router.delete('/sintomas/:id', clinicaController.deleteSintoma); // 🛡️ NOVA: Eliminar sintoma pelo caixote do lixo
 
 module.exports = router;
