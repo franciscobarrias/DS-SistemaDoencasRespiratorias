@@ -17,6 +17,22 @@ const db = new sqlite3.Database(dbPath, (err) => {
                 console.error('⚠️ Erro ao ativar chaves estrangeiras:', err.message);
             } else {
                 console.log('🛡️ Suporte a chaves estrangeiras ativado.');
+                
+                // 🛡️ NOVIDADE: Inicialização automática da tabela de terapêutica
+                db.run(`CREATE TABLE IF NOT EXISTS terapeutica (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    utente_id INTEGER,
+                    medicamento TEXT NOT NULL,
+                    posologia TEXT,
+                    data_inicio DATETIME DEFAULT CURRENT_TIMESTAMP,
+                    FOREIGN KEY(utente_id) REFERENCES utentes(id)
+                )`, (errTable) => {
+                    if (errTable) {
+                        console.error('❌ Erro ao criar a tabela terapeutica:', errTable.message);
+                    } else {
+                        console.log('📦 Tabela "terapeutica" verificada/criada com sucesso.');
+                    }
+                });
             }
         });
     }

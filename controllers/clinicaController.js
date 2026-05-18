@@ -4,6 +4,7 @@ const Ajv = require('ajv');
 const caratSchema = require('../schemas/carat-request.schema.json');
 const alertPatchSchema = require('../schemas/alert-patch.schema.json');
 const sintomaSchema = require('../schemas/sintoma-request.schema.json');
+
 const ajv = new Ajv();
 const validateCaratRequest = ajv.compile(caratSchema);
 const validateAlertPatch = ajv.compile(alertPatchSchema);
@@ -51,7 +52,7 @@ const clinicaController = {
     addAvaliacao: (req, res) => {
         const body = req.body;
 
-        // Validate request body against JSON Schema using Ajv
+        // Validação com Ajv
         const valid = validateCaratRequest(body);
         if (!valid) {
             return res.status(400).json({ error: 'Corpo inválido', details: validateCaratRequest.errors });
@@ -98,9 +99,10 @@ const clinicaController = {
     // US06: Resolver/Fechar Alerta
     resolverAlerta: (req, res) => {
         const { id } = req.params;
-        // If client provided estado/prioridade in body, validate it
+        // Validação opcional se enviarem dados no corpo
         const body = req.body || {};
         const shouldValidate = Object.prototype.hasOwnProperty.call(body, 'estado') || Object.prototype.hasOwnProperty.call(body, 'prioridade');
+        
         if (shouldValidate) {
             const valid = validateAlertPatch(body);
             if (!valid) return res.status(400).json({ error: 'Corpo inválido para alerta', details: validateAlertPatch.errors });
@@ -122,7 +124,6 @@ const clinicaController = {
     },
 
     // Obter sintomas de um utente específico
-    // 🛡️ CORRIGIDO: Força o SQLite a procurar texto E número
     getSintomas: (req, res) => {
         const idTexto = String(req.params.utente_id);
         const idNumero = parseInt(idTexto) || 0;
@@ -133,9 +134,7 @@ const clinicaController = {
         });
     },
 
-    // ==========================================
-    // 🛡️ NOVA FUNÇÃO: Trazer TODOS os sintomas (Para a visão Global)
-    // ==========================================
+    // Trazer TODOS os sintomas (Para a visão Global)
     getAllSintomas: (req, res) => {
         db.all("SELECT * FROM sintomas ORDER BY id DESC", [], (err, rows) => {
             if (err) return res.status(500).json({ error: err.message });
@@ -143,14 +142,11 @@ const clinicaController = {
         });
     },
 
-    // ==========================================
-    // AS FUNÇÕES RESTANTES ESTÃO AQUI ABAIXO
-    // ==========================================
-
-    // Gravar um novo sintoma na Base de Dados (Resolve o Erro 404)
+    // Gravar um novo sintoma na Base de Dados com Validação Ajv
     addSintoma: (req, res) => {
         const body = req.body || {};
         const valid = validateSintomaRequest(body);
+        
         if (!valid) return res.status(400).json({ error: 'Corpo inválido para sintoma', details: validateSintomaRequest.errors });
 
         const { utente_id, descricao, severidade } = body;
@@ -161,7 +157,7 @@ const clinicaController = {
         });
     },
 
-    // 🛡️ NOVA FUNÇÃO INTEGRADA: Eliminar o sintoma da Base de Dados
+    // Eliminar o sintoma da Base de Dados
     deleteSintoma: (req, res) => {
         const { id } = req.params;
         db.run("DELETE FROM sintomas WHERE id = ?", [id], function(err) {
@@ -175,6 +171,30 @@ const clinicaController = {
         db.all("SELECT * FROM avaliacoes_carat ORDER BY data DESC", [], (err, rows) => {
             if (err) return res.status(500).json({ error: err.message });
             res.json(rows);
+        });
+    },
+
+    // ==========================================
+    // 🛡️ REINSERIDO: Gestão de Terapêutica
+    // ==========================================
+    getTerapeutica: (req, res) => {
+        const { id } = req.params;
+        db.all("SELECT * FROM terapeutica WHERE utente_id = ? ORDER BY data_inicio DESC", [id], (err, rows) => {
+            if (err) return res.status(500).json({ error: err.message });
+            res.json(rows);
+        });
+    },
+
+    addMedicamento: (req, res) => {
+        const { id } = req.params;
+        const { medicamento, posologia } = req.body;
+        
+        if (!medicamento) return res.status(400).json({ error: "O nome do medicamento é obrigatório." });
+
+        db.run("INSERT INTO terapeutica (utente_id, medicamento, posologia) VALUES (?, ?, ?)",
+            [id, medicamento, posologia || ''], function(err) {
+            if (err) return res.status(500).json({ error: err.message });
+            res.status(201).json({ id: this.lastID, mensagem: "Medicamento adicionado com sucesso!" });
         });
     }
 };

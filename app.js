@@ -1,6 +1,7 @@
 const API_URL = 'http://localhost:3000';
 let graficoSintomasAtivo = null;
-let graficoHistoricoAtivo = null; // 🛡️ NOVA: Variável para o gráfico da Ficha Clínica
+let graficoHistoricoAtivo = null; 
+let utenteFichaAtualId = null; // 🛡️ NOVA: Guarda o ID do utente aberto no modal para a Terapêutica
 
 function escaparHTML(texto) {
     if (!texto) return '';
@@ -47,7 +48,6 @@ async function carregarAlertas() {
     }
 }
 
-// 🛡️ CORRIGIDO: Adicionado o botão "👁️ Ver Ficha" na lista de utentes
 async function carregarUtentes() {
     const lista = document.getElementById('lista-utentes');
     const kpiUtentes = document.getElementById('kpi-utentes');
@@ -79,31 +79,48 @@ async function carregarUtentes() {
 }
 
 // ==========================================
-// 🛡️ FICHA CLÍNICA INDIVIDUAL (MODAL)
+// 🛡️ FICHA CLÍNICA INDIVIDUAL (MODAL) E TERAPÊUTICA
 // ==========================================
 async function abrirFichaClinica(id, nome, email, telefone) {
-    // Atualiza os dados demográficos no cabeçalho do Modal
+    utenteFichaAtualId = id; // Memoriza o utente atual para associar os medicamentos corretos
     document.getElementById('prof-nome').innerText = nome;
     document.getElementById('prof-contactos').innerText = `📧 ${email} | 📞 ${telefone} | Módulo de Análise ID: ${id}`;
     
     const listaSintomas = document.getElementById('prof-lista-sintomas');
     const listaCarat = document.getElementById('prof-lista-carat');
+    const listaTerapeutica = document.getElementById('prof-lista-terapeutica'); // Nova lista
     
     listaSintomas.innerHTML = '<li>A carregar sintomas...</li>';
     listaCarat.innerHTML = '<li>A carregar avaliações...</li>';
+    listaTerapeutica.innerHTML = '<li>A carregar terapêutica...</li>';
     
-    // Mostra o Modal no ecrã
     document.getElementById('modal-perfil').style.display = 'flex';
 
     try {
-        // Dispara os dois pedidos HTTP em paralelo para ser mais rápido
-        const [resSintomas, resHistorico] = await Promise.all([
+        // Dispara os três pedidos HTTP em paralelo
+        const [resSintomas, resHistorico, resTerap] = await Promise.all([
             fetch(`${API_URL}/sintomas/${id}`),
-            fetch(`${API_URL}/utentes/${id}/history`)
+            fetch(`${API_URL}/utentes/${id}/history`),
+            fetch(`${API_URL}/utentes/${id}/terapeutica`)
         ]);
 
         const sintomas = await resSintomas.json();
         const historico = await resHistorico.json();
+        const terapeutica = await resTerap.json();
+
+        // ---- Renderizar Terapêutica ----
+        listaTerapeutica.innerHTML = '';
+        if (terapeutica.length === 0) {
+            listaTerapeutica.innerHTML = '<li style="color:var(--text-muted); font-size:13px; grid-column: span 2;">Nenhuma terapêutica registada.</li>';
+        } else {
+            terapeutica.forEach(med => {
+                listaTerapeutica.innerHTML += `
+                    <li style="background: white; border: 1px solid #e5e7eb; padding: 10px; border-radius: 6px; display: flex; flex-direction: column;">
+                        <strong style="color: var(--primary); font-size: 14px;">💊 ${escaparHTML(med.medicamento)}</strong>
+                        <span style="font-size: 12px; color: var(--text-muted); margin-top: 4px;">🔄 Posologia: ${escaparHTML(med.posologia)}</span>
+                    </li>`;
+            });
+        }
 
         // ---- Renderizar Sintomas Individuais ----
         listaSintomas.innerHTML = '';
@@ -127,7 +144,7 @@ async function abrirFichaClinica(id, nome, email, telefone) {
 
         if (historico.length === 0) {
             listaCarat.innerHTML = '<li style="color:var(--text-muted); font-size:13px;">Nenhum teste CARAT realizado.</li>';
-            gerarGraficoEvolucao([], []); // Desenha gráfico vazio
+            gerarGraficoEvolucao([], []); 
         } else {
             historico.forEach(h => {
                 const dataFormatada = new Date(h.data).toLocaleDateString('pt-PT');
@@ -142,7 +159,6 @@ async function abrirFichaClinica(id, nome, email, telefone) {
                     </li>`;
             });
             
-            // Desenha o gráfico temporal
             gerarGraficoEvolucao(labelsDatas, dadosScores);
         }
 
@@ -150,6 +166,7 @@ async function abrirFichaClinica(id, nome, email, telefone) {
         console.error("Erro ao carregar Ficha Clínica:", err);
         listaSintomas.innerHTML = '<li>Erro ao ligar ao servidor.</li>';
         listaCarat.innerHTML = '<li>Erro ao ligar ao servidor.</li>';
+        listaTerapeutica.innerHTML = '<li>Erro ao ligar ao servidor.</li>';
     }
 }
 
@@ -173,7 +190,7 @@ function gerarGraficoEvolucao(labels, dados) {
                 borderColor: '#3b82f6',
                 backgroundColor: 'rgba(59, 130, 246, 0.1)',
                 borderWidth: 3,
-                tension: 0.2, // Linha ligeiramente curva
+                tension: 0.2, 
                 fill: true,
                 pointBackgroundColor: '#1e3a8a',
                 pointRadius: 5
@@ -185,7 +202,7 @@ function gerarGraficoEvolucao(labels, dados) {
             scales: {
                 y: {
                     min: 0,
-                    max: 30, // Score máximo do CARAT
+                    max: 30, 
                     grid: { color: '#e5e7eb' },
                     ticks: { stepSize: 5 }
                 },
@@ -196,6 +213,40 @@ function gerarGraficoEvolucao(labels, dados) {
             }
         }
     });
+}
+
+// 🛡️ Lógica para gravar o novo medicamento
+async function gravarMedicamento() {
+    if (!utenteFichaAtualId) return;
+
+    const medicamento = document.getElementById('input-med-nome').value;
+    const posologia = document.getElementById('input-med-pos').value;
+
+    if (!medicamento) {
+        alert("O nome do medicamento é obrigatório.");
+        return;
+    }
+
+    try {
+        const res = await fetch(`${API_URL}/utentes/${utenteFichaAtualId}/terapeutica`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ medicamento, posologia })
+        });
+
+        if (res.ok) {
+            document.getElementById('input-med-nome').value = '';
+            document.getElementById('input-med-pos').value = '';
+            
+            // Força a recarregar a ficha para mostrar o novo medicamento instantaneamente
+            abrirFichaClinica(utenteFichaAtualId, document.getElementById('prof-nome').innerText, '', '');
+        } else {
+            alert("Erro ao gravar medicamento no servidor.");
+        }
+    } catch (err) {
+        console.error("Erro:", err);
+        alert("Erro de comunicação.");
+    }
 }
 // ==========================================
 

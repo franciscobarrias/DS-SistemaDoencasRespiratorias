@@ -145,30 +145,43 @@
                 </div>
                 <button class="btn-close-modal" onclick="fecharFichaClinica()">&times;</button>
             </div>
+            
             <div class="modal-body-clinico">
+                
                 <div class="modal-subcard modal-col-full" style="height: 300px;">
-                    <h3 style="color: var(--primary, #1e3a8a); margin-bottom: 10px; font-size: 15px;">📈 Evolução Temporal do Controlo Clínico (CARAT)</h3>
+                    <h3 style="color: var(--primary); margin-bottom: 10px; font-size: 15px;">📈 Evolução Temporal do Controlo Clínico (CARAT)</h3>
                     <div style="position: relative; height: 230px; width: 100%;">
                         <canvas id="graficoHistoricoUtente"></canvas>
                     </div>
                 </div>
                 
-                <div class="modal-subcard">
-                    <h3 style="color: var(--primary, #1e3a8a); margin-bottom: 10px; font-size: 15px;">🔴 Sintomas Atuais Registados</h3>
-                    <ul id="prof-lista-sintomas" style="list-style: none; padding: 0;">
+                <div class="modal-subcard modal-col-full">
+                    <h3 style="color: var(--primary); margin-bottom: 10px; font-size: 15px;">💊 Terapêutica Atual</h3>
+                    
+                    <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+                        <input type="text" id="input-med-nome" placeholder="Medicamento (ex: Salbutamol)" style="flex: 2; padding: 8px; border: 1px solid #d1d5db; border-radius: 6px;">
+                        <input type="text" id="input-med-pos" placeholder="Posologia (ex: 2 puffs/dia)" style="flex: 2; padding: 8px; border: 1px solid #d1d5db; border-radius: 6px;">
+                        <button class="btn-green" onclick="gravarMedicamento()" style="flex: 1; border:none; border-radius:6px; cursor: pointer;">+ Adicionar</button>
+                    </div>
+                    
+                    <ul id="prof-lista-terapeutica" style="list-style: none; padding: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
                         </ul>
+                </div>
+                
+                <div class="modal-subcard">
+                    <h3 style="color: var(--primary); margin-bottom: 10px; font-size: 15px;">🔴 Sintomas Atuais Registados</h3>
+                    <ul id="prof-lista-sintomas" style="list-style: none; padding: 0;"></ul>
                 </div>
 
                 <div class="modal-subcard">
-                    <h3 style="color: var(--primary, #1e3a8a); margin-bottom: 10px; font-size: 15px;">📋 Histórico de Submissões</h3>
-                    <ul id="prof-lista-carat" style="list-style: none; padding: 0;">
-                        </ul>
+                    <h3 style="color: var(--primary); margin-bottom: 10px; font-size: 15px;">📋 Histórico de Submissões</h3>
+                    <ul id="prof-lista-carat" style="list-style: none; padding: 0;"></ul>
                 </div>
             </div>
         </div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="app.js?v=12"></script>
+    <script src="app.js?v=13"></script>
 </body>
 </html>

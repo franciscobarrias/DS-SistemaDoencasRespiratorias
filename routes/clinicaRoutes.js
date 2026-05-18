@@ -5,7 +5,13 @@ const clinicaController = require('../controllers/clinicaController');
 // --- Rotas de Utentes ---
 router.get('/utentes', clinicaController.getAllUtentes);
 router.post('/utentes', clinicaController.addUtente); // 🛡️ NOVA: Criar novo utente
-router.get('/utentes/:id/history', clinicaController.getHistoricoUtente); // 🛡️ CORRIGIDO: Alterado para 'history' para a Ficha Clínica funcionar
+router.get('/utentes/:id/history', clinicaController.getHistoricoUtente); 
+
+// ==========================================
+// 🛡️ NOVAS ROTAS: Gestão de Terapêutica
+// ==========================================
+router.get('/utentes/:id/terapeutica', clinicaController.getTerapeutica); // Listar medicamentos do utente
+router.post('/utentes/:id/terapeutica', clinicaController.addMedicamento); // Gravar novo medicamento
 
 // --- Rotas de Avaliações CARAT ---
 router.get('/carat-resultados', clinicaController.getAvaliacoes);
@@ -16,9 +22,9 @@ router.get('/medico/alertas', clinicaController.getAlertas);
 router.put('/medico/alertas/:id/resolver', clinicaController.resolverAlerta);
 
 // --- Rotas de Sintomas ---
-router.get('/sintomas', clinicaController.getAllSintomas); // 🛡️ NOVA: Listar todos os sintomas globais
+router.get('/sintomas', clinicaController.getAllSintomas); // Listar todos os sintomas globais
 router.get('/sintomas/:utente_id', clinicaController.getSintomas); // Listar sintomas de um utente
 router.post('/sintomas', clinicaController.addSintoma); // Gravar novo sintoma
-router.delete('/sintomas/:id', clinicaController.deleteSintoma); // 🛡️ NOVA: Eliminar sintoma pelo caixote do lixo
+router.delete('/sintomas/:id', clinicaController.deleteSintoma); // Eliminar sintoma pelo caixote do lixo
 
 module.exports = router;
