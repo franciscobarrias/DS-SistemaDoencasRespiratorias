@@ -1,202 +1,373 @@
 <!DOCTYPE html>
+
 <html lang="pt">
+
 <head>
+
     <meta charset="UTF-8">
+
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
     <title>SaudINOB - Dashboard Clínico</title>
+
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+
     <link rel="stylesheet" href="style.css">
+
     <style>
+
         /* Estilos do Modal da Ficha Clínica */
+
         .modal-overlay {
+
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+
             background: rgba(0, 0, 0, 0.5); backdrop-filter: blur(4px);
+
             display: none; justify-content: center; align-items: center; z-index: 2000;
+
         }
+
         .modal-clinico {
+
             background: var(--card-bg, #ffffff); width: 90%; max-width: 900px; height: 85vh;
+
             border-radius: 16px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.15);
+
             display: flex; flex-direction: column; overflow: hidden;
+
             animation: slideUp 0.3s ease;
+
         }
+
         @keyframes slideUp { from { transform: translateY(30px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
-        
+
+       
+
         .modal-header-clinico {
+
             background: linear-gradient(135deg, var(--primary, #1e3a8a), var(--secondary, #3b82f6));
+
             color: white; padding: 20px; display: flex; justify-content: space-between; align-items: center;
+
         }
+
         .modal-body-clinico { padding: 24px; overflow-y: auto; flex: 1; display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+
         .modal-col-full { grid-column: span 2; }
+
         .modal-subcard { background: #f9fafb; border: 1px solid #e5e7eb; padding: 15px; border-radius: 8px; }
-        
+
+       
+
         .btn-close-modal { background: transparent; border: none; color: white; font-size: 24px; cursor: pointer; }
+
         .btn-close-modal:hover { transform: scale(1.1); }
+
         .perfil-nome { font-size: 22px; font-weight: 700; }
+
         .perfil-meta { font-size: 13px; opacity: 0.9; margin-top: 4px; }
+
     </style>
+
 </head>
+
 <body>
 
+
+
     <header class="main-header">
+
         <button class="theme-toggle" onclick="toggleTheme()" id="btn-theme">🌙</button>
-        
+
+       
+
         <div class="header-content">
+
             <h1>🏥 Clínica SaudINOB</h1>
+
             <p>Painel de Monitorização Respiratória</p>
+
         </div>
+
     </header>
 
+
+
     <div class="kpi-grid">
+
         <div class="kpi-card" onclick="carregarUtentes()">
+
             <h3>👥 Total Utentes</h3>
+
             <p id="kpi-utentes">-</p>
+
         </div>
+
         <div class="kpi-card alert-kpi" onclick="carregarAlertas()">
+
             <h3>🚨 Alertas Ativos</h3>
+
             <p id="kpi-alertas">-</p>
+
         </div>
+
     </div>
+
+
 
     <div class="dashboard-grid">
+
         <div class="card card-danger">
+
             <h2>Alertas Clínicos <button class="btn-red" onclick="carregarAlertas()">↻ Atualizar</button></h2>
+
             <ul id="lista-alertas">
+
                 <li class="empty-state">A carregar...</li>
+
             </ul>
+
         </div>
 
-        <div class="card" style="background: linear-gradient(135deg, #f0f9ff, #e0f2fe); border: 1px solid #bae6fd;">
-            <h2 style="display: flex; gap: 10px; align-items: center; justify-content: space-between;">
-                🌍 Ambiente (Porto)
-                <button class="btn-blue" onclick="carregarQualidadeAr()" style="padding: 4px 8px; font-size: 12px;">↻ Atualizar</button>
-            </h2>
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 15px;">
-                <div>
-                    <p style="margin: 0; font-size: 12px; color: var(--text-muted); text-transform: uppercase; font-weight: bold;">Índice Europeu (AQI)</p>
-                    <h1 id="aqi-valor" style="font-size: 3rem; margin: 0; color: var(--primary); line-height: 1;">--</h1>
-                    <p id="aqi-estado" style="margin: 5px 0 0 0; font-weight: bold; color: var(--text-muted);">A carregar...</p>
-                </div>
-                <div style="text-align: right; background: rgba(255,255,255,0.7); padding: 10px; border-radius: 8px;">
-                    <p style="margin: 4px 0; font-size: 13px;">🌫️ PM10: <strong id="aqi-pm10">--</strong></p>
-                    <p style="margin: 4px 0; font-size: 13px;">🌫️ PM2.5: <strong id="aqi-pm25">--</strong></p>
-                    <p style="margin: 4px 0; font-size: 13px;">🌿 Pólen (Gramíneas): <strong id="aqi-polen">--</strong></p>
-                </div>
-            </div>
-        </div>
+
 
         <div class="card">
+
             <h2 style="display: flex; gap: 10px; align-items: center; justify-content: space-between;">
-                Resultados CARAT 
+
+                Resultados CARAT
+
                 <div>
+
                     <button class="btn-blue" onclick="exportarDadosCSV()">📥 Exportar Excel</button>
+
                     <button class="btn-green" onclick="carregarAvaliacoes()">↻ Atualizar</button>
+
                 </div>
+
             </h2>
+
             <ul id="lista-avaliacoes">
+
                 <li class="empty-state">Sem dados carregados.</li>
+
             </ul>
+
         </div>
 
+
+
         <div class="card">
+
             <h2 style="display: flex; gap: 10px; align-items: center; justify-content: space-between;">
-                Utentes Registados 
+
+                Utentes Registados
+
                 <div>
+
                     <button class="btn-green" onclick="toggleFormUtente()">+ Novo</button>
+
                     <button class="btn-blue" onclick="carregarUtentes()">↻ Atualizar</button>
+
                 </div>
+
             </h2>
-            
+
+           
+
             <div id="form-novo-utente" style="display: none; background: #f9fafb; padding: 15px; border-radius: 8px; margin-bottom: 15px; border: 1px solid #e5e7eb;">
+
                 <input type="text" id="input-utente-nome" placeholder="Nome Completo *" style="width: 100%; margin-bottom: 10px; padding: 8px; border: 1px solid #d1d5db; border-radius: 6px;">
+
                 <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+
                     <input type="email" id="input-utente-email" placeholder="E-mail" style="flex: 1; padding: 8px; border: 1px solid #d1d5db; border-radius: 6px;">
+
                     <input type="tel" id="input-utente-tel" placeholder="Telefone" style="flex: 1; padding: 8px; border: 1px solid #d1d5db; border-radius: 6px;">
+
                 </div>
+
                 <div style="display: flex; gap: 10px;">
+
                     <button class="btn-green" onclick="gravarNovoUtente()" style="flex: 1; border:none; padding:8px; border-radius:6px; cursor:pointer;">Gravar Utente</button>
+
                     <button class="btn-red" onclick="toggleFormUtente()" style="flex: 1; border:none; padding:8px; border-radius:6px; cursor:pointer;">Cancelar</button>
+
                 </div>
+
             </div>
+
+
 
             <input type="text" id="pesquisa-utente" class="search-bar" placeholder="🔍 Pesquisar pelo nome...">
-            
+
+           
+
             <ul id="lista-utentes">
+
                 <li class="empty-state">Sem dados carregados.</li>
+
             </ul>
+
         </div>
 
+
+
         <div class="card">
+
             <h2>Estatísticas de Sintomas</h2>
+
             <div style="position: relative; height: 250px; width: 100%; display: flex; justify-content: center; margin-top: 20px;">
+
                 <canvas id="graficoSintomas"></canvas>
+
             </div>
+
         </div>
 
+
+
         <div class="card">
+
             <h2>Sintomas Reportados <button class="btn-orange" onclick="carregarSintomas()">↻ Atualizar</button></h2>
+
             <ul id="lista-sintomas">
+
                 <li class="empty-state">Sem dados carregados.</li>
+
             </ul>
+
         </div>
-    
+
+   
+
         <div class="card form-card">
+
             <h2>📝 Registar Novo Sintoma</h2>
+
             <div class="form-group">
+
                 <input type="number" id="input-sintoma-utente" placeholder="ID do Utente">
+
                 <input type="text" id="input-sintoma-desc" placeholder="Ex: Tosse persistente, Chiadeira">
+
                 <select id="input-sintoma-sev">
+
                     <option value="" disabled selected>Selecione a Severidade...</option>
+
                     <option value="Leve">🟢 Leve</option>
+
                     <option value="Moderada">🟡 Moderada</option>
+
                     <option value="Grave">🔴 Grave</option>
+
                 </select>
+
                 <button class="btn-orange full-width" onclick="gravarNovoSintoma()">Gravar no Sistema</button>
+
             </div>
+
         </div>
+
     </div>
+
+
 
     <div id="modal-perfil" class="modal-overlay">
+
         <div class="modal-clinico">
+
             <div class="modal-header-clinico">
+
                 <div>
+
                     <div class="perfil-nome" id="prof-nome">Nome do Utente</div>
+
                     <div class="perfil-meta" id="prof-contactos">Email | Telefone</div>
-                </div>
-                <button class="btn-close-modal" onclick="fecharFichaClinica()">&times;</button>
-            </div>
-            
-            <div class="modal-body-clinico">
-                <div class="modal-subcard modal-col-full" style="height: 300px;">
-                    <h3 style="color: var(--primary); margin-bottom: 10px; font-size: 15px;">📈 Evolução Temporal do Controlo Clínico (CARAT)</h3>
-                    <div style="position: relative; height: 230px; width: 100%;">
-                        <canvas id="graficoHistoricoUtente"></canvas>
-                    </div>
-                </div>
-                
-                <div class="modal-subcard modal-col-full">
-                    <h3 style="color: var(--primary); margin-bottom: 10px; font-size: 15px;">💊 Terapêutica Atual</h3>
-                    <div style="display: flex; gap: 10px; margin-bottom: 15px;">
-                        <input type="text" id="input-med-nome" placeholder="Medicamento (ex: Salbutamol)" style="flex: 2; padding: 8px; border: 1px solid #d1d5db; border-radius: 6px;">
-                        <input type="text" id="input-med-pos" placeholder="Posologia (ex: 2 puffs/dia)" style="flex: 2; padding: 8px; border: 1px solid #d1d5db; border-radius: 6px;">
-                        <button class="btn-green" onclick="gravarMedicamento()" style="flex: 1; border:none; border-radius:6px; cursor: pointer;">+ Adicionar</button>
-                    </div>
-                    <ul id="prof-lista-terapeutica" style="list-style: none; padding: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 10px;"></ul>
-                </div>
-                
-                <div class="modal-subcard">
-                    <h3 style="color: var(--primary); margin-bottom: 10px; font-size: 15px;">🔴 Sintomas Atuais Registados</h3>
-                    <ul id="prof-lista-sintomas" style="list-style: none; padding: 0;"></ul>
+
                 </div>
 
-                <div class="modal-subcard">
-                    <h3 style="color: var(--primary); margin-bottom: 10px; font-size: 15px;">📋 Histórico de Submissões</h3>
-                    <ul id="prof-lista-carat" style="list-style: none; padding: 0;"></ul>
-                </div>
+                <button class="btn-close-modal" onclick="fecharFichaClinica()">&times;</button>
+
             </div>
+
+           
+
+            <div class="modal-body-clinico">
+
+               
+
+                <div class="modal-subcard modal-col-full" style="height: 300px;">
+
+                    <h3 style="color: var(--primary); margin-bottom: 10px; font-size: 15px;">📈 Evolução Temporal do Controlo Clínico (CARAT)</h3>
+
+                    <div style="position: relative; height: 230px; width: 100%;">
+
+                        <canvas id="graficoHistoricoUtente"></canvas>
+
+                    </div>
+
+                </div>
+
+               
+
+                <div class="modal-subcard modal-col-full">
+
+                    <h3 style="color: var(--primary); margin-bottom: 10px; font-size: 15px;">💊 Terapêutica Atual</h3>
+
+                   
+
+                    <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+
+                        <input type="text" id="input-med-nome" placeholder="Medicamento (ex: Salbutamol)" style="flex: 2; padding: 8px; border: 1px solid #d1d5db; border-radius: 6px;">
+
+                        <input type="text" id="input-med-pos" placeholder="Posologia (ex: 2 puffs/dia)" style="flex: 2; padding: 8px; border: 1px solid #d1d5db; border-radius: 6px;">
+
+                        <button class="btn-green" onclick="gravarMedicamento()" style="flex: 1; border:none; border-radius:6px; cursor: pointer;">+ Adicionar</button>
+
+                    </div>
+
+                   
+
+                    <ul id="prof-lista-terapeutica" style="list-style: none; padding: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+
+                        </ul>
+
+                </div>
+
+               
+
+                <div class="modal-subcard">
+
+                    <h3 style="color: var(--primary); margin-bottom: 10px; font-size: 15px;">🔴 Sintomas Atuais Registados</h3>
+
+                    <ul id="prof-lista-sintomas" style="list-style: none; padding: 0;"></ul>
+
+                </div>
+
+
+
+                <div class="modal-subcard">
+
+                    <h3 style="color: var(--primary); margin-bottom: 10px; font-size: 15px;">📋 Histórico de Submissões</h3>
+
+                    <ul id="prof-lista-carat" style="list-style: none; padding: 0;"></ul>
+
+                </div>
+
+            </div>
+
         </div>
+
     </div>
 
+
+
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="app.js?v=14"></script>
+
+    <script src="app.js?v=13"></script>
+
 </body>
+
 </html>
