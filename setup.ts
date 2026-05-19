@@ -48,3 +48,5 @@ db.close((err) => {
     }
     console.log('Ligação à base de dados fechada.');
 });
+
+export {};

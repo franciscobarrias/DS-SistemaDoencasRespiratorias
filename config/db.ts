@@ -40,3 +40,5 @@ const db = new sqlite3.Database(dbPath, (err) => {
 
 // 4. Exportar a ligação para o resto do projeto (Controllers, etc.)
 module.exports = db;
+
+export {};

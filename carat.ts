@@ -1,6 +1,6 @@
 function computeCaratFromAnswers(answers) {
-    const values = Object.values(answers || {});
-    const totalScore = values.reduce((sum, value) => sum + Number(value || 0), 0);
+    const values = Object.values(answers || {}) as Array<number | string>;
+    const totalScore = values.reduce<number>((sum, value) => sum + Number(value || 0), 0);
 
     let interpretation = 'Nao controlado';
     if (totalScore > 24) {
@@ -48,3 +48,5 @@ module.exports = {
     recommendationsFromInterpretation,
     nextStepFromInterpretation,
 };
+
+export {};

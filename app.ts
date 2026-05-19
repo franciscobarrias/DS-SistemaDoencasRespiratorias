@@ -6,6 +6,18 @@ let graficoHistoricoAtivo = null;
 
 let utenteFichaAtualId = null; // 🛡️ NOVA: Guarda o ID do utente aberto no modal para a Terapêutica
 
+declare const Chart: any;
+
+type MaybeInput = HTMLInputElement | null;
+
+const getInputValue = (id: string): string => {
+    return (document.getElementById(id) as MaybeInput)?.value ?? '';
+};
+
+const setInputValue = (id: string, value: string): void => {
+    const input = document.getElementById(id) as MaybeInput;
+    if (input) input.value = value;
+};
 
 
 function escaparHTML(texto) {
@@ -160,7 +172,7 @@ async function carregarUtentes() {
 
 // ==========================================
 
-// FICHA CLÍNICA INDIVIDUAL E TERAPÊUTICA
+// 🛡️ FICHA CLÍNICA INDIVIDUAL (MODAL) E TERAPÊUTICA
 
 // ==========================================
 
@@ -310,7 +322,7 @@ async function abrirFichaClinica(id, nome, email, telefone) {
 
                     <li style="padding: 6px 0; border-bottom: 1px dashed #e5e7eb; font-size: 13px; display:flex; justify-content:space-between;">
 
-                        <span> ${dataFormatada}</span>
+                        <span>📅 ${dataFormatada}</span>
 
                         <strong style="${corScore}">Score: ${h.score_total}/30</strong>
 
@@ -432,7 +444,7 @@ function gerarGraficoEvolucao(labels, dados) {
 
 
 
-//Lógica para gravar o novo medicamento
+// 🛡️ Lógica para gravar o novo medicamento
 
 async function gravarMedicamento() {
 
@@ -440,9 +452,9 @@ async function gravarMedicamento() {
 
 
 
-    const medicamento = document.getElementById('input-med-nome').value;
+    const medicamento = getInputValue('input-med-nome');
 
-    const posologia = document.getElementById('input-med-pos').value;
+    const posologia = getInputValue('input-med-pos');
 
 
 
@@ -472,9 +484,9 @@ async function gravarMedicamento() {
 
         if (res.ok) {
 
-            document.getElementById('input-med-nome').value = '';
+            setInputValue('input-med-nome', '');
 
-            document.getElementById('input-med-pos').value = '';
+            setInputValue('input-med-pos', '');
 
            
 
@@ -498,7 +510,7 @@ async function gravarMedicamento() {
 
 }
 
-
+// ==========================================
 
 
 
@@ -728,11 +740,11 @@ function toggleFormUtente() {
 
 async function gravarNovoUtente() {
 
-    const nome = document.getElementById('input-utente-nome').value;
+    const nome = getInputValue('input-utente-nome');
 
-    const email = document.getElementById('input-utente-email').value;
+    const email = getInputValue('input-utente-email');
 
-    const telefone = document.getElementById('input-utente-tel').value;
+    const telefone = getInputValue('input-utente-tel');
 
 
 
@@ -762,11 +774,11 @@ async function gravarNovoUtente() {
 
         if (res.ok) {
 
-            document.getElementById('input-utente-nome').value = '';
+            setInputValue('input-utente-nome', '');
 
-            document.getElementById('input-utente-email').value = '';
+            setInputValue('input-utente-email', '');
 
-            document.getElementById('input-utente-tel').value = '';
+            setInputValue('input-utente-tel', '');
 
            
 
@@ -898,11 +910,11 @@ async function resolverAlerta(alertaId) {
 
 async function gravarNovoSintoma() {
 
-    const utenteId = document.getElementById('input-sintoma-utente').value;
+    const utenteId = getInputValue('input-sintoma-utente');
 
-    const descricao = document.getElementById('input-sintoma-desc').value;
+    const descricao = getInputValue('input-sintoma-desc');
 
-    const severidade = document.getElementById('input-sintoma-sev').value;
+    const severidade = getInputValue('input-sintoma-sev');
 
 
 
@@ -944,7 +956,7 @@ async function gravarNovoSintoma() {
 
         if (res.ok) {
 
-            document.getElementById('input-sintoma-desc').value = '';
+            setInputValue('input-sintoma-desc', '');
 
            
 
@@ -982,7 +994,7 @@ async function gravarNovoSintoma() {
 
 function configurarPesquisa() {
 
-    const inputPesquisa = document.querySelector('input[placeholder*="Pesquisar"]');
+    const inputPesquisa = document.querySelector('input[placeholder*="Pesquisar"]') as HTMLInputElement | null;
 
     if (!inputPesquisa) return;
 
@@ -990,7 +1002,7 @@ function configurarPesquisa() {
 
     inputPesquisa.addEventListener('input', (evento) => {
 
-        const termoPesquisa = evento.target.value.toLowerCase();
+        const termoPesquisa = (evento.target as HTMLInputElement).value.toLowerCase();
 
         const listaUtentes = document.getElementById('lista-utentes');
 

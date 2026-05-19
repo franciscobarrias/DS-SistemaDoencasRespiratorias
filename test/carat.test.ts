@@ -33,3 +33,5 @@ test('recommendations and next step exist for all interpretation levels', () => 
         assert.ok(typeof nextStepFromInterpretation(level) === 'string');
     }
 });
+
+export {};

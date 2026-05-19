@@ -34,3 +34,5 @@ const validateBody = (schema) => {
 };
 
 module.exports = validateBody;
+
+export {};

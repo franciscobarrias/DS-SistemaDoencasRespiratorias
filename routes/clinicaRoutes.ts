@@ -28,3 +28,5 @@ router.post('/sintomas', clinicaController.addSintoma); // Gravar novo sintoma
 router.delete('/sintomas/:id', clinicaController.deleteSintoma); // Eliminar sintoma pelo caixote do lixo
 
 module.exports = router;
+
+export {};

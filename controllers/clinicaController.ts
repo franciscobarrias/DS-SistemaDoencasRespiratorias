@@ -200,3 +200,5 @@ const clinicaController = {
 };
 
 module.exports = clinicaController;
+
+export {};
