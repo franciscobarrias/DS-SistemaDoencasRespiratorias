@@ -65,6 +65,25 @@
             </ul>
         </div>
 
+        <div class="card" style="background: linear-gradient(135deg, #f0f9ff, #e0f2fe); border: 1px solid #bae6fd;">
+            <h2 style="display: flex; gap: 10px; align-items: center; justify-content: space-between;">
+                🌍 Ambiente (Porto)
+                <button class="btn-blue" onclick="carregarQualidadeAr()" style="padding: 4px 8px; font-size: 12px;">↻ Atualizar</button>
+            </h2>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 15px;">
+                <div>
+                    <p style="margin: 0; font-size: 12px; color: var(--text-muted); text-transform: uppercase; font-weight: bold;">Índice Europeu (AQI)</p>
+                    <h1 id="aqi-valor" style="font-size: 3rem; margin: 0; color: var(--primary); line-height: 1;">--</h1>
+                    <p id="aqi-estado" style="margin: 5px 0 0 0; font-weight: bold; color: var(--text-muted);">A carregar...</p>
+                </div>
+                <div style="text-align: right; background: rgba(255,255,255,0.7); padding: 10px; border-radius: 8px;">
+                    <p style="margin: 4px 0; font-size: 13px;">🌫️ PM10: <strong id="aqi-pm10">--</strong></p>
+                    <p style="margin: 4px 0; font-size: 13px;">🌫️ PM2.5: <strong id="aqi-pm25">--</strong></p>
+                    <p style="margin: 4px 0; font-size: 13px;">🌿 Pólen (Gramíneas): <strong id="aqi-polen">--</strong></p>
+                </div>
+            </div>
+        </div>
+
         <div class="card">
             <h2 style="display: flex; gap: 10px; align-items: center; justify-content: space-between;">
                 Resultados CARAT 
@@ -147,7 +166,6 @@
             </div>
             
             <div class="modal-body-clinico">
-                
                 <div class="modal-subcard modal-col-full" style="height: 300px;">
                     <h3 style="color: var(--primary); margin-bottom: 10px; font-size: 15px;">📈 Evolução Temporal do Controlo Clínico (CARAT)</h3>
                     <div style="position: relative; height: 230px; width: 100%;">
@@ -157,15 +175,12 @@
                 
                 <div class="modal-subcard modal-col-full">
                     <h3 style="color: var(--primary); margin-bottom: 10px; font-size: 15px;">💊 Terapêutica Atual</h3>
-                    
                     <div style="display: flex; gap: 10px; margin-bottom: 15px;">
                         <input type="text" id="input-med-nome" placeholder="Medicamento (ex: Salbutamol)" style="flex: 2; padding: 8px; border: 1px solid #d1d5db; border-radius: 6px;">
                         <input type="text" id="input-med-pos" placeholder="Posologia (ex: 2 puffs/dia)" style="flex: 2; padding: 8px; border: 1px solid #d1d5db; border-radius: 6px;">
                         <button class="btn-green" onclick="gravarMedicamento()" style="flex: 1; border:none; border-radius:6px; cursor: pointer;">+ Adicionar</button>
                     </div>
-                    
-                    <ul id="prof-lista-terapeutica" style="list-style: none; padding: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-                        </ul>
+                    <ul id="prof-lista-terapeutica" style="list-style: none; padding: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 10px;"></ul>
                 </div>
                 
                 <div class="modal-subcard">
@@ -182,6 +197,6 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="app.js?v=13"></script>
+    <script src="app.js?v=14"></script>
 </body>
 </html>

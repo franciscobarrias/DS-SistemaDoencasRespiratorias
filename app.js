@@ -540,6 +540,49 @@ function atualizarGrafico(leve, moderada, grave) {
     });
 }
 
+// ==========================================
+// 🌍 INTEGRAÇÃO API: Qualidade do Ar (Open-Meteo)
+// ==========================================
+async function carregarQualidadeAr() {
+    try {
+        // Coordenadas para a zona do Porto (41.1496, -8.6110)
+        const url = 'https://air-quality-api.open-meteo.com/v1/air-quality?latitude=41.1496&longitude=-8.6110&current=european_aqi,pm10,pm2_5,grass_pollen&timezone=Europe%2FLisbon';
+        
+        const res = await fetch(url);
+        const data = await res.json();
+        
+        // Extrair os dados da resposta da API
+        const aqi = data.current.european_aqi;
+        const pm10 = data.current.pm10;
+        const pm25 = data.current.pm2_5;
+        const polen = data.current.grass_pollen; 
+        
+        // Preencher o HTML
+        const aqiValor = document.getElementById('aqi-valor');
+        const aqiEstado = document.getElementById('aqi-estado');
+        
+        aqiValor.innerText = aqi;
+        document.getElementById('aqi-pm10').innerText = pm10 + ' μg/m³';
+        document.getElementById('aqi-pm25').innerText = pm25 + ' μg/m³';
+        document.getElementById('aqi-polen').innerText = (polen !== null && polen > 0) ? polen + ' grãos/m³' : 'Inativo';
+
+        // Lógica de Cores baseada na gravidade do ar (Regras Europeias)
+        if (aqi <= 50) {
+            aqiEstado.innerText = '🟢 Qualidade Boa';
+            aqiValor.style.color = '#10b981'; // Verde
+        } else if (aqi <= 100) {
+            aqiEstado.innerText = '🟡 Qualidade Moderada';
+            aqiValor.style.color = '#f59e0b'; // Amarelo
+        } else {
+            aqiEstado.innerText = '🔴 Qualidade Fraca/Má';
+            aqiValor.style.color = '#ef4444'; // Vermelho
+        }
+    } catch (err) {
+        console.error("Erro ao carregar qualidade do ar:", err);
+        document.getElementById('aqi-estado').innerText = '⚠️ Erro de API';
+    }
+}
+
 function toggleTheme() {
     const body = document.documentElement;
     const isDark = body.getAttribute('data-theme') === 'dark';
@@ -559,4 +602,5 @@ window.onload = () => {
     carregarSintomas();
     carregarAvaliacoes(); 
     configurarPesquisa(); 
+    carregarQualidadeAr(); // 🌍 <-- Chama a API da Qualidade do Ar no arranque
 };
