@@ -19,6 +19,24 @@
             --warning: #f59e0b;
         }
 
+        /* Dark theme overrides (activated when documentElement has data-theme="dark") */
+        :root[data-theme="dark"] {
+            --primary: #60a5fa;
+            --secondary: #2563eb;
+            --bg: #0b1220;
+            --card-bg: #0f1724;
+            --text-main: #e6eef8;
+            --text-muted: #94a3b8;
+            --success: #34d399;
+            --danger: #f87171;
+            --warning: #f59e0b;
+        }
+
+        /* Smooth transitions when switching themes */
+        html, body, .info-card, .question-card, .header {
+            transition: background-color 200ms ease, color 200ms ease, border-color 200ms ease;
+        }
+
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Poppins', sans-serif; }
 
         body { background-color: var(--bg); color: var(--text-main); padding: 0 20px 40px; }
