@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SaudINOB - Avaliação CARAT</title>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
     <style>
         :root {
             --primary: #1e3a8a;
@@ -109,9 +110,16 @@
 </head>
 <body>
 
-    <header class="header">
-        <h1>Fast CARAT</h1>
-        <p>Control of Allergic Rhinitis and Asthma Test</p>
+    <header class="main-header">
+        <div style="display:flex; gap:10px; align-items:center;">
+            <button class="theme-toggle" onclick="toggleTheme()" id="btn-theme">🌙</button>
+            <a href="index.html" class="btn-blue" style="text-decoration:none; padding:8px 10px; border-radius:6px; color:white; background:var(--secondary);">🏠 Dashboard</a>
+        </div>
+
+        <div class="header-content">
+            <h1>Fast CARAT</h1>
+            <p>Control of Allergic Rhinitis and Asthma Test</p>
+        </div>
     </header>
 
     <div class="container">
@@ -122,7 +130,8 @@
                     <strong style="display:block; font-size: 14px; color: var(--text-muted);">Identificação</strong>
                     <label for="utente_id" style="font-size: 18px; color: var(--primary); font-weight: 600;">ID do Utente:</label>
                 </div>
-                <input type="number" id="utente_id" placeholder="Ex: 2" required>
+                <input type="number" id="utente_id" placeholder="Ex: 2" min="1" required>
+                <small id="utentes-info" style="display:block; color:var(--text-muted); margin-left:10px; font-size:13px;">Carregando número de utentes...</small>
             </div>
 
             <div class="section-title">Durante as últimas 4 semanas, por causa da sua asma/rinite/alergia quantas vezes, em média, teve:</div>
@@ -150,6 +159,45 @@
 
     <script>
         const API_URL = 'http://localhost:3000';
+
+        // Theme handling (shared with dashboard)
+        function toggleTheme() {
+            const body = document.documentElement;
+            const isDark = body.getAttribute('data-theme') === 'dark';
+            body.setAttribute('data-theme', isDark ? 'light' : 'dark');
+            document.getElementById('btn-theme').innerText = isDark ? '🌙' : '☀️';
+            localStorage.setItem('tema', isDark ? 'light' : 'dark');
+        }
+
+        function initTheme() {
+            if (localStorage.getItem('tema') === 'dark') {
+                document.documentElement.setAttribute('data-theme', 'dark');
+                const btn = document.getElementById('btn-theme'); if (btn) btn.innerText = '☀️';
+            }
+        }
+
+        // Load number of utentes to set ID range
+        async function carregarUtentesCount() {
+            const info = document.getElementById('utentes-info');
+            const input = document.getElementById('utente_id');
+            if (!info || !input) return;
+            try {
+                const res = await fetch(`${API_URL}/utentes`);
+                if (!res.ok) throw new Error('Falha ao obter utentes');
+                const dados = await res.json();
+                const total = Array.isArray(dados) ? dados.length : 0;
+                if (total === 0) {
+                    info.innerText = 'Não existem utentes. Registe utentes no dashboard.';
+                    input.max = '1';
+                } else {
+                    info.innerText = `Total de utentes: ${total} — ID válido: 1 a ${total}`;
+                    input.max = String(total);
+                }
+            } catch (err) {
+                console.error('Erro ao obter utentes:', err);
+                info.innerText = 'Erro ao obter utentes (verifica o backend).';
+            }
+        }
 
         // 1. GERAR AS PERGUNTAS DE FORMA INTELIGENTE E LIMPA
         const listaPerguntas = [
@@ -298,6 +346,21 @@
                 btnEnviar.disabled = false;
             });
         }
+        // Inicializações
+        initTheme();
+        carregarUtentesCount();
+
+        // Garante que o ID está dentro do intervalo quando o utilizador altera o valor
+        document.getElementById('utente_id').addEventListener('input', (e) => {
+            const el = e.target;
+            if (!el) return;
+            const min = parseInt(el.min || '1', 10);
+            const max = parseInt(el.max || '1', 10);
+            let val = parseInt(el.value || '0', 10);
+            if (val < min) el.value = String(min);
+            if (val > max) el.value = String(max);
+        });
+
     </script>
 </body>
 </html>

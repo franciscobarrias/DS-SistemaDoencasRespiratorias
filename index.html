@@ -78,7 +78,10 @@
 
     <header class="main-header">
 
-        <button class="theme-toggle" onclick="toggleTheme()" id="btn-theme">🌙</button>
+        <div style="display:flex; gap:10px; align-items:center;">
+            <button class="theme-toggle" onclick="toggleTheme()" id="btn-theme">🌙</button>
+            <a href="questionario.html" class="btn-blue" style="text-decoration:none; padding:8px 10px; border-radius:6px; color:white; background:var(--secondary);">📋 Questionário</a>
+        </div>
 
        
 
@@ -258,7 +261,7 @@
 
                     <option value="Leve">🟢 Leve</option>
 
-                    <option value="Moderada">🟡 Moderada</option>
+                    <option value="Normal">🟡 Moderada</option>
 
                     <option value="Grave">🔴 Grave</option>
 

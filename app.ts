@@ -270,7 +270,8 @@ async function abrirFichaClinica(id, nome, email, telefone) {
 
             sintomas.forEach(s => {
 
-                const corBadge = s.severidade === 'Grave' ? '#ef4444' : (s.severidade === 'Moderada' ? '#f59e0b' : '#10b981');
+                const sevForColor = (s.severidade === 'Moderada') ? 'Normal' : s.severidade;
+                const corBadge = sevForColor === 'Grave' ? '#ef4444' : (sevForColor === 'Normal' ? '#f59e0b' : '#10b981');
 
                 listaSintomas.innerHTML += `
 
@@ -608,7 +609,7 @@ async function carregarSintomas() {
 
         lista.innerHTML = '';
 
-        let contagem = { Leve: 0, Moderada: 0, Grave: 0 };
+        let contagem = { Leve: 0, Normal: 0, Grave: 0 };
 
 
 
@@ -626,7 +627,9 @@ async function carregarSintomas() {
 
         sintomas.forEach(s => {
 
-            const severidade = s.severidade || 'Leve';
+            let severidade = s.severidade || 'Leve';
+            // Normalizar valores: backend may use 'Normal' while older entries or UI labels use 'Moderada'
+            if (severidade === 'Moderada') severidade = 'Normal';
 
             const descricao = s.descricao || 'Sem descrição';
 
@@ -672,7 +675,7 @@ async function carregarSintomas() {
 
 
 
-        atualizarGrafico(contagem.Leve, contagem.Moderada, contagem.Grave);
+        atualizarGrafico(contagem.Leve, contagem.Normal, contagem.Grave);
 
     } catch (err) {
 
@@ -1038,7 +1041,7 @@ function configurarPesquisa() {
 
 
 
-function atualizarGrafico(leve, moderada, grave) {
+function atualizarGrafico(leve, normal, grave) {
 
     const ctx = document.getElementById('graficoSintomas');
 
@@ -1060,7 +1063,7 @@ function atualizarGrafico(leve, moderada, grave) {
 
             datasets: [{
 
-                data: [leve, moderada, grave],
+                data: [leve, normal, grave],
 
                 backgroundColor: ['#10b981', '#f59e0b', '#ef4444'],
 
