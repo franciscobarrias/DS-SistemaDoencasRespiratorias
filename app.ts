@@ -4,7 +4,7 @@ let graficoSintomasAtivo = null;
 
 let graficoHistoricoAtivo = null;
 
-let utenteFichaAtualId = null; // 🛡️ NOVA: Guarda o ID do utente aberto no modal para a Terapêutica
+let utenteFichaAtualId = null; 
 
 declare const Chart: any;
 
@@ -169,12 +169,6 @@ async function carregarUtentes() {
 }
 
 
-
-// ==========================================
-
-// 🛡️ FICHA CLÍNICA INDIVIDUAL (MODAL) E TERAPÊUTICA
-
-// ==========================================
 
 async function abrirFichaClinica(id, nome, email, telefone) {
 

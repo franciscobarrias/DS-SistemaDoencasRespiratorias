@@ -5,6 +5,7 @@ const clinicaController = require('../controllers/clinicaController');
 // --- Rotas de Utentes ---
 router.get('/utentes', clinicaController.getAllUtentes);
 router.post('/utentes', clinicaController.addUtente); // 🛡️ NOVA: Criar novo utente
+router.post('/utentes/sync/fhir', clinicaController.syncLegacyUtentesToFhir); // Sincronizar utentes sem fhir_id
 router.get('/utentes/:id/history', clinicaController.getHistoricoUtente); 
 
 // ==========================================

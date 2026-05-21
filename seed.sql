@@ -3,10 +3,10 @@ INSERT INTO medicos (nome, especialidade, email)
 VALUES ('Dr. Francisco Barrias', 'Pneumologia', 'francisco.med@fmup.pt');
 
 -- 2. Inserir Utentes (Associados ao médico ID 1)
-INSERT INTO utentes (nome, email, telefone, medico_id) VALUES 
-('João Silva', 'joao.silva@email.com', '912345678', 1),
-('Maria Santos', 'maria.santos@email.com', '987654321', 1),
-('Carlos Costa', 'carlos.costa@email.com', '965412387', 1);
+INSERT INTO utentes (nome, email, telefone, medico_id, fhir_id) VALUES 
+('João Silva', 'joao.silva@email.com', '912345678', 1, NULL),
+('Maria Santos', 'maria.santos@email.com', '987654321', 1, NULL),
+('Carlos Costa', 'carlos.costa@email.com', '965412387', 1, NULL);
 
 -- 3. Inserir uma Avaliação com Score Baixo (Para testar o alerta)
 INSERT INTO avaliacoes_carat (utente_id, respostas, score_total, interpretacao, conclusao) 

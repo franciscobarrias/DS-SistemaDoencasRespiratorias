@@ -20,6 +20,7 @@ CREATE TABLE utentes (
     email TEXT UNIQUE,
     telefone TEXT,
     medico_id INTEGER,
+    fhir_id TEXT,
     FOREIGN KEY (medico_id) REFERENCES medicos (id)
 );
 
