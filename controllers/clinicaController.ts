@@ -52,12 +52,170 @@ const clinicaController = {
         });
     },
 
+    // Sincronizar todos os Patients do FHIR para BD local (descoberta automática)
+    syncAllFhirPatients: async (req, res) => {
+        try {
+            console.log('[FHIR Sync] Iniciando sincronização de todos os patients do FHIR...');
+
+            // Buscar todos os patients do FHIR
+            let allPatients: any[] = [];
+            
+            try {
+                const fhirBundle = await fhirService.searchPatients({ _count: 1000 });
+                
+                console.log('[FHIR Sync] Bundle recebido:', { 
+                    hasEntry: !!fhirBundle.entry,
+                    entryCount: fhirBundle.entry?.length || 0,
+                    hasLink: !!fhirBundle.link 
+                });
+
+                if (fhirBundle.entry && Array.isArray(fhirBundle.entry)) {
+                    allPatients.push(...fhirBundle.entry.map((e: any) => e.resource).filter((p: any) => p?.resourceType === 'Patient'));
+                    console.log(`[FHIR Sync] Encontrados ${allPatients.length} patients no FHIR`);
+                }
+            } catch (searchErr) {
+                console.error('[FHIR Sync] Erro ao buscar patients:', searchErr);
+                throw searchErr;
+            }
+
+            if (allPatients.length === 0) {
+                console.log('[FHIR Sync] Nenhum patient encontrado no FHIR');
+                return res.status(200).json({
+                    total: 0,
+                    imported: 0,
+                    errors: 0,
+                    errorDetails: [],
+                    mensagem: 'Nenhum patient encontrado no servidor FHIR'
+                });
+            }
+
+            // Verificar quais já existem localmente
+            const existingFhirIds = await dbAll('SELECT fhir_id FROM utentes WHERE fhir_id IS NOT NULL AND fhir_id != ""') as Array<{ fhir_id: string }>;
+            const existingIds = new Set(existingFhirIds.map(u => u.fhir_id));
+
+            console.log(`[FHIR Sync] ${existingIds.size} patients já existem localmente`);
+
+            // Importar novos patients
+            let imported = 0;
+            const errors = [];
+
+            for (const patient of allPatients) {
+                if (!patient.id) {
+                    console.warn('[FHIR Sync] Patient sem ID, pulando');
+                    continue;
+                }
+                
+                if (existingIds.has(patient.id)) {
+                    console.log(`[FHIR Sync] Patient ${patient.id} já existe localmente, pulando...`);
+                    continue;
+                }
+
+                try {
+                    // Extrair dados do patient FHIR
+                    const names = patient.name?.[0] || {};
+                    const given = Array.isArray(names.given) ? names.given.join(' ') : (names.given || '');
+                    const family = names.family || '';
+                    const nome = `${given} ${family}`.trim() || 'Paciente Sem Nome';
+
+                    const telecom = patient.telecom || [];
+                    const email = telecom.find((t: any) => t.system === 'email')?.value || '';
+                    const telefone = telecom.find((t: any) => t.system === 'phone')?.value || '';
+
+                    // Inserir na BD
+                    const result = await new Promise((resolve, reject) => {
+                        db.run(
+                            'INSERT INTO utentes (nome, email, telefone, fhir_id) VALUES (?, ?, ?, ?)',
+                            [nome, email, telefone, patient.id],
+                            function(err) {
+                                if (err) return reject(err);
+                                resolve({ id: this.lastID });
+                            }
+                        );
+                    });
+
+                    console.log(`[FHIR Sync] Patient ${patient.id} (${nome}) importado com sucesso`);
+                    imported++;
+                } catch (err) {
+                    console.error(`[FHIR Sync] Erro ao importar patient ${patient.id}:`, err);
+                    errors.push({ fhirId: patient.id, error: String(err) });
+                }
+            }
+
+            console.log(`[FHIR Sync] Sincronização concluída: ${imported} patients importados, ${errors.length} erros`);
+
+            return res.status(200).json({
+                total: allPatients.length,
+                imported,
+                errors: errors.length,
+                errorDetails: errors,
+                mensagem: `Sincronização concluída: ${imported}/${allPatients.length} patients importados`
+            });
+        } catch (err) {
+            console.error('[FHIR Sync] Erro crítico:', err);
+            return res.status(500).json({ error: String(err) });
+        }
+    },
+
+    // Importar Patient do FHIR para BD local
+    importUtenteFromFhir: async (req, res) => {
+        try {
+            const { fhirId } = req.params;
+            if (!fhirId) return res.status(400).json({ error: 'FHIR ID é obrigatório' });
+
+            console.log(`[FHIR Import] Tentando importar Patient com ID: ${fhirId}`);
+
+            // Buscar Patient do FHIR
+            const fhirPatient = await fhirService.getPatientFromFhir(fhirId);
+            if (!fhirPatient) return res.status(404).json({ error: 'Patient não encontrado no FHIR' });
+
+            console.log(`[FHIR Import] Patient encontrado:`, fhirPatient);
+
+            // Extrair dados
+            const names = fhirPatient.name?.[0] || {};
+            const given = Array.isArray(names.given) ? names.given.join(' ') : (names.given || '');
+            const family = names.family || '';
+            const nome = `${given} ${family}`.trim() || 'Paciente Sem Nome';
+
+            const telecom = fhirPatient.telecom || [];
+            const email = telecom.find((t: any) => t.system === 'email')?.value || '';
+            const telefone = telecom.find((t: any) => t.system === 'phone')?.value || '';
+
+            console.log(`[FHIR Import] Dados extraídos - Nome: ${nome}, Email: ${email}, Tel: ${telefone}`);
+
+            // Inserir na BD local com FHIR ID
+            const result = await new Promise((resolve, reject) => {
+                db.run(
+                    'INSERT INTO utentes (nome, email, telefone, fhir_id) VALUES (?, ?, ?, ?)',
+                    [nome, email, telefone, fhirId],
+                    function(err) {
+                        if (err) return reject(err);
+                        resolve({ id: this.lastID });
+                    }
+                );
+            });
+
+            console.log(`[FHIR Import] Utente importado com sucesso - ID local: ${(result as any).id}`);
+
+            return res.status(201).json({
+                id: (result as any).id,
+                nome,
+                email,
+                telefone,
+                fhir_id: fhirId,
+                mensagem: 'Paciente importado com sucesso do FHIR'
+            });
+        } catch (err) {
+            console.error(`[FHIR Import] Erro:`, err);
+            return res.status(500).json({ error: String(err) });
+        }
+    },
+
     // Sincronizar utentes antigos sem fhir_id com o servidor FHIR
     syncLegacyUtentesToFhir: async (req, res) => {
         try {
             const utentes = await dbAll(
                 "SELECT id, nome, email, telefone, fhir_id FROM utentes WHERE fhir_id IS NULL OR TRIM(COALESCE(fhir_id, '')) = '' ORDER BY id ASC"
-            );
+            ) as Array<{ id: number; nome: string; email?: string; telefone?: string; fhir_id?: string | null }>;
 
             const errors = [];
             let synced = 0;
@@ -290,6 +448,178 @@ const clinicaController = {
             if (err) return res.status(500).json({ error: err.message });
             res.status(201).json({ id: this.lastID, mensagem: "Medicamento adicionado com sucesso!" });
         });
+    },
+
+    // Sincronizar observações FHIR para um patient específico
+    syncObservacoesFhir: async (req, res) => {
+        try {
+            const { id } = req.params; // id local do utente
+
+            // Obter patient local
+            const utente = await new Promise<any>((resolve, reject) => {
+                db.get('SELECT id, fhir_id FROM utentes WHERE id = ?', [id], (err, row) => {
+                    if (err) return reject(err);
+                    resolve(row);
+                });
+            });
+
+            if (!utente || !utente.fhir_id) {
+                return res.status(404).json({ error: 'Utente não tem FHIR ID associado' });
+            }
+
+            console.log(`[Obs Sync] Sincronizando observações do patient FHIR: ${utente.fhir_id}`);
+
+            // Buscar observações do FHIR para este patient
+            const url = `https://fhir.hl7.pt/r5/fhir/Observation?subject=Patient/${utente.fhir_id}&_count=100`;
+            const resposta = await fetch(url);
+            
+            if (!resposta.ok) {
+                console.log(`[Obs Sync] Erro ao buscar observações: ${resposta.status}`);
+                return res.status(500).json({ error: `Erro FHIR: ${resposta.status}` });
+            }
+
+            const bundle = await resposta.json();
+            const entries = bundle.entry || [];
+            
+            console.log(`[Obs Sync] Encontradas ${entries.length} observações`);
+
+            let sincronizadas = 0;
+            let duplicadas = 0;
+
+            for (const entry of entries) {
+                const obs = entry.resource;
+                if (obs.resourceType !== 'Observation') continue;
+
+                try {
+                    const obsId = obs.id;
+                    const codigo = obs.code?.coding?.[0]?.code || 'unknown';
+                    const display = obs.code?.coding?.[0]?.display || 'Sem nome';
+                    const valor = obs.value?.Quantity?.value || obs.valueString || obs.value?.CodeableConcept?.coding?.[0]?.display || '';
+                    const unidade = obs.value?.Quantity?.unit || '';
+                    const dataEfetiva = obs.effectiveDateTime || new Date().toISOString();
+                    const status = obs.status || 'final';
+
+                    // Tipo de observação (temperatura, medicamento, etc.)
+                    const tipo = codigo === '8310-5' ? 'temperatura' : 
+                                 codigo === '2516-8' ? 'pressao_sistolica' :
+                                 codigo === '2517-6' ? 'pressao_diastolica' :
+                                 codigo.includes('drug') || display.toLowerCase().includes('medicamento') ? 'medicamento' : 'outro';
+
+                    // Inserir ou ignorar se já existe
+                    const result = await new Promise<any>((resolve) => {
+                        db.run(
+                            `INSERT INTO observacoes_fhir 
+                             (utente_id, fhir_observation_id, codigo, display, valor, unidade, data_efetiva, status, tipo)
+                             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                            [utente.id, obsId, codigo, display, valor, unidade, dataEfetiva, status, tipo],
+                            function(err) {
+                                if (err && err.message.includes('UNIQUE')) {
+                                    resolve({ duplicada: true });
+                                } else if (err) {
+                                    resolve({ erro: true, msg: err.message });
+                                } else {
+                                    resolve({ sucesso: true });
+                                }
+                            }
+                        );
+                    });
+
+                    if (result.duplicada) {
+                        duplicadas++;
+                    } else if (result.sucesso) {
+                        sincronizadas++;
+                        console.log(`[Obs Sync] ✅ ${display} (${valor} ${unidade})`);
+                    }
+                } catch (err) {
+                    console.error(`[Obs Sync] Erro ao processar observação:`, err);
+                }
+            }
+
+            return res.status(200).json({
+                total: entries.length,
+                sincronizadas,
+                duplicadas,
+                mensagem: `${sincronizadas} observações sincronizadas, ${duplicadas} duplicadas`
+            });
+        } catch (err) {
+            console.error(`[Obs Sync] Erro geral:`, err);
+            return res.status(500).json({ error: String(err) });
+        }
+    },
+
+    // Listar observações de um patient
+    getObservacoesFhir: async (req, res) => {
+        try {
+            const { id } = req.params;
+
+            const observacoes = await new Promise<any[]>((resolve, reject) => {
+                db.all(
+                    'SELECT * FROM observacoes_fhir WHERE utente_id = ? ORDER BY data_efetiva DESC LIMIT 50',
+                    [id],
+                    (err, rows) => {
+                        if (err) return reject(err);
+                        resolve(rows || []);
+                    }
+                );
+            });
+
+            return res.status(200).json(observacoes);
+        } catch (err) {
+            console.error(`[Obs Get] Erro:`, err);
+            return res.status(500).json({ error: String(err) });
+        }
+    },
+
+    // Webhook para receber observações via POST do GraphBuilder/Postman
+    receberObservacaoFhir: async (req, res) => {
+        try {
+            const { fhir_id, codigo, display, valor, unidade, data_efetiva, tipo } = req.body;
+
+            if (!fhir_id) {
+                return res.status(400).json({ error: 'fhir_id é obrigatório' });
+            }
+
+            console.log(`[Obs Webhook] Recebida observação para patient: ${fhir_id}`);
+
+            // Encontrar utente pelo fhir_id
+            const utente = await new Promise<any>((resolve, reject) => {
+                db.get('SELECT id FROM utentes WHERE fhir_id = ?', [fhir_id], (err, row) => {
+                    if (err) return reject(err);
+                    resolve(row);
+                });
+            });
+
+            if (!utente) {
+                return res.status(404).json({ error: 'Patient não encontrado na BD local' });
+            }
+
+            // Gerar ID único para a observação
+            const obsId = `obs-${fhir_id}-${Date.now()}`;
+
+            // Inserir observação
+            const result = await new Promise<any>((resolve, reject) => {
+                db.run(
+                    `INSERT INTO observacoes_fhir 
+                     (utente_id, fhir_observation_id, codigo, display, valor, unidade, data_efetiva, tipo)
+                     VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+                    [utente.id, obsId, codigo || 'unknown', display || 'Observação', valor || '', unidade || '', data_efetiva || new Date().toISOString(), tipo || 'outro'],
+                    function(err) {
+                        if (err) return reject(err);
+                        resolve({ id: this.lastID });
+                    }
+                );
+            });
+
+            console.log(`[Obs Webhook] ✅ ${display} (${valor} ${unidade}) gravada para utente ID ${utente.id}`);
+
+            return res.status(201).json({
+                id: result.id,
+                mensagem: 'Observação recebida e gravada com sucesso'
+            });
+        } catch (err) {
+            console.error(`[Obs Webhook] Erro:`, err);
+            return res.status(500).json({ error: String(err) });
+        }
     }
 };
 

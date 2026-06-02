@@ -6,6 +6,8 @@ const clinicaController = require('../controllers/clinicaController');
 router.get('/utentes', clinicaController.getAllUtentes);
 router.post('/utentes', clinicaController.addUtente); // 🛡️ NOVA: Criar novo utente
 router.post('/utentes/sync/fhir', clinicaController.syncLegacyUtentesToFhir); // Sincronizar utentes sem fhir_id
+router.post('/utentes/sync/fhir-all', clinicaController.syncAllFhirPatients); // 🔄 Sincronizar todos os patients do FHIR
+router.post('/utentes/import-fhir/:fhirId', clinicaController.importUtenteFromFhir); // Importar Patient do FHIR
 router.get('/utentes/:id/history', clinicaController.getHistoricoUtente); 
 
 // ==========================================
@@ -13,6 +15,13 @@ router.get('/utentes/:id/history', clinicaController.getHistoricoUtente);
 // ==========================================
 router.get('/utentes/:id/terapeutica', clinicaController.getTerapeutica); // Listar medicamentos do utente
 router.post('/utentes/:id/terapeutica', clinicaController.addMedicamento); // Gravar novo medicamento
+
+// ==========================================
+// 📊 NOVAS ROTAS: Observações FHIR (Medicamentos, Temperatura, etc.)
+// ==========================================
+router.get('/utentes/:id/observacoes-fhir', clinicaController.getObservacoesFhir); // Listar observações do patient
+router.post('/utentes/:id/sincronizar-observacoes-fhir', clinicaController.syncObservacoesFhir); // Sincronizar observações do FHIR
+router.post('/fhir/webhook/observacao', clinicaController.receberObservacaoFhir); // Webhook para receber observações do GraphBuilder/Postman
 
 // --- Rotas de Avaliações CARAT ---
 router.get('/carat-resultados', clinicaController.getAvaliacoes);

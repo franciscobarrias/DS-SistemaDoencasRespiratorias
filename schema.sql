@@ -10,14 +10,14 @@ CREATE TABLE medicos (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     nome TEXT NOT NULL,
     especialidade TEXT,
-    email TEXT UNIQUE
+    email TEXT
 );
 
 -- Tabela de Utentes (Com a coluna telefone corrigida)
 CREATE TABLE utentes (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     nome TEXT NOT NULL,
-    email TEXT UNIQUE,
+    email TEXT,
     telefone TEXT,
     medico_id INTEGER,
     fhir_id TEXT,
@@ -56,5 +56,21 @@ CREATE TABLE sintomas (
     descricao TEXT NOT NULL,
     severidade TEXT NOT NULL,
     data_registo DATE DEFAULT CURRENT_DATE,
+    FOREIGN KEY (utente_id) REFERENCES utentes (id) ON DELETE CASCADE
+);
+
+-- Tabela de Observações FHIR (Medicamentos, Temperatura, etc.)
+CREATE TABLE observacoes_fhir (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    utente_id INTEGER NOT NULL,
+    fhir_observation_id TEXT UNIQUE,
+    codigo TEXT,
+    display TEXT,
+    valor TEXT,
+    unidade TEXT,
+    data_efetiva DATETIME,
+    status TEXT DEFAULT 'final',
+    tipo TEXT, -- 'temperatura', 'medicamento', 'pressao', etc.
+    data_sincronizacao DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (utente_id) REFERENCES utentes (id) ON DELETE CASCADE
 );

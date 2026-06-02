@@ -3,7 +3,8 @@ const express = require('express');
 const cors = require('cors');
 const path = require('path');
 const clinicaRoutes = require('./routes/clinicaRoutes'); 
-const clinicaController = require('./controllers/clinicaController'); 
+const clinicaController = require('./controllers/clinicaController');
+const fhirRoutes = require('./routes/fhir.routes'); 
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -25,6 +26,7 @@ app.delete('/sintomas/:id', clinicaController.deleteSintoma);
 // ========================================================
 
 app.use('/', clinicaRoutes);
+app.use('/fhir', fhirRoutes);
 
 app.listen(PORT, () => {
     console.log(`🚀 Servidor a correr na porta http://localhost:${PORT}`);

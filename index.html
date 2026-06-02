@@ -169,6 +169,12 @@
 
                 <div>
 
+                    <button class="btn-cyan" onclick="sincronizarTodosFhir()" style="background:#0891b2;">🔄 Sincronizar FHIR</button>
+
+                    <button class="btn-cyan" onclick="importarUtenteDoFhir()" style="background:#06b6d4;">🔗 ID Manual</button>
+
+                    <button class="btn-orange" onclick="sincronizarUtentesFHIR()">🔄 Sync Local</button>
+
                     <button class="btn-green" onclick="toggleFormUtente()">+ Novo</button>
 
                     <button class="btn-blue" onclick="carregarUtentes()">↻ Atualizar</button>
@@ -236,6 +242,18 @@
             <h2>Sintomas Reportados <button class="btn-orange" onclick="carregarSintomas()">↻ Atualizar</button></h2>
 
             <ul id="lista-sintomas">
+
+                <li class="empty-state">Sem dados carregados.</li>
+
+            </ul>
+
+        </div>
+
+        <div class="card">
+
+            <h2>Observações FHIR <button class="btn-purple" onclick="carregarObservacoesFHIR()" style="background:#8b5cf6;">↻ Atualizar</button></h2>
+
+            <ul id="lista-fhir-observacoes">
 
                 <li class="empty-state">Sem dados carregados.</li>
 
@@ -341,6 +359,16 @@
 
                
 
+                <div class="modal-subcard modal-col-full">
+
+                    <h3 style="color: var(--primary); margin-bottom: 10px; font-size: 15px;">📊 Observações FHIR (Temperatura, Medicamentos, Pressão)</h3>
+
+                    <ul id="prof-lista-observacoes-fhir" style="list-style: none; padding: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 10px;"></ul>
+
+                </div>
+
+               
+
                 <div class="modal-subcard">
 
                     <h3 style="color: var(--primary); margin-bottom: 10px; font-size: 15px;">🔴 Sintomas Atuais Registados</h3>
@@ -369,7 +397,7 @@
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-    <script src="dist/app.js?v=13"></script>
+    <script src="dist/app.js?v=21"></script>
 
 </body>
 

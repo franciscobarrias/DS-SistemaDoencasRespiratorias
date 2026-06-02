@@ -126,13 +126,17 @@ async function carregarUtentes() {
 
             const item = document.createElement('li');
 
+            const fhirBadge = utente.fhir_id
+                ? '<span class="badge" style="background:#10b981; color:white; margin-left:8px;">FHIR ligado</span>'
+                : '<span class="badge" style="background:#6b7280; color:white; margin-left:8px;">FHIR por sincronizar</span>';
+
             item.innerHTML = `
 
                 <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
 
                     <div>
 
-                        <strong>${escaparHTML(utente.nome)} (ID: ${utente.id})</strong> <br>
+                        <strong>${escaparHTML(utente.nome)} (ID: ${utente.id})</strong>${fhirBadge} <br>
 
                         <span style="color:var(--text-muted); font-size:13px;">📧 ${escaparHTML(utente.email)} | 📞 ${escaparHTML(utente.telefone)}</span>
 
@@ -791,6 +795,48 @@ async function gravarNovoUtente() {
         console.error("Erro no fetch:", err);
 
         alert("Erro de comunicação com a API.");
+
+    }
+
+}
+
+
+async function sincronizarUtentesFHIR() {
+
+    try {
+
+        const res = await fetch(`${API_URL}/utentes/sync/fhir`, {
+
+            method: 'POST'
+
+        });
+
+
+
+        const resultado = await res.json();
+
+
+
+        if (!res.ok) {
+
+            alert(`Erro na sincronização FHIR: ${resultado.error || res.statusText}`);
+
+            return;
+        }
+
+
+
+        await carregarUtentes();
+
+
+
+        alert(`FHIR sincronizado: ${resultado.synced}/${resultado.total} utentes. Erros: ${resultado.errors}`);
+
+    } catch (err) {
+
+        console.error('Erro a sincronizar utentes FHIR:', err);
+
+        alert('Erro de comunicação ao sincronizar utentes com FHIR.');
 
     }
 
