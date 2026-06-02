@@ -159,6 +159,7 @@ async function carregarUtentes() {
                     <div style="display: flex; gap: 5px; flex-wrap: wrap; justify-content: flex-end;">
                         ${utente.fhir_id ? `<button class="btn-green" style="padding: 6px 10px; font-size: 12px;" onclick="sincronizarObservacoesFhir(${utente.id})">🔄 Obs.</button>` : ''}
                         <button class="btn-blue" onclick="abrirFichaClinica(${utente.id}, '${utente.nome.replace(/'/g, "\\'")}', '${escaparHTML(utente.email)}', '${escaparHTML(utente.telefone)}')">👁️ Ver Ficha</button>
+                        <button class="btn-red" style="padding:6px 10px; font-size:12px;" onclick="eliminarUtente(${utente.id}, '${utente.nome.replace(/'/g, "\\'")}')">🗑️ Eliminar</button>
                     </div>
 
                 </div>
@@ -202,6 +203,8 @@ async function abrirFichaClinica(id, nome, email, telefone) {
 
     const listaObservacoesFhir = document.getElementById('prof-lista-observacoes-fhir');
 
+    const listaTemperaturas = document.getElementById('prof-lista-temperaturas');
+
    
 
     listaSintomas.innerHTML = '<li>A carregar sintomas...</li>';
@@ -212,17 +215,26 @@ async function abrirFichaClinica(id, nome, email, telefone) {
 
     listaObservacoesFhir.innerHTML = '<li>A carregar observações FHIR...</li>';
 
+    if (listaTemperaturas) listaTemperaturas.innerHTML = '<li>A carregar temperaturas...</li>';
+
    
 
     document.getElementById('modal-perfil').style.display = 'flex';
+
+    const tempDataInput = document.getElementById('input-temp-data') as HTMLInputElement | null;
+    if (tempDataInput) {
+        const now = new Date();
+        now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+        tempDataInput.value = now.toISOString().slice(0, 16);
+    }
 
 
 
     try {
 
-        // Dispara os quatro pedidos HTTP em paralelo
+        // Dispara os pedidos HTTP em paralelo
 
-        const [resSintomas, resHistorico, resTerap, resObsFhir] = await Promise.all([
+        const [resSintomas, resHistorico, resTerap, resObsFhir, resTemps] = await Promise.all([
 
             fetch(`${API_URL}/sintomas/${id}`),
 
@@ -230,7 +242,9 @@ async function abrirFichaClinica(id, nome, email, telefone) {
 
             fetch(`${API_URL}/utentes/${id}/terapeutica`),
 
-            fetch(`${API_URL}/utentes/${id}/observacoes-fhir`)
+            fetch(`${API_URL}/utentes/${id}/observacoes-fhir`),
+
+            fetch(`${API_URL}/utentes/${id}/temperaturas`)
 
         ]);
 
@@ -243,6 +257,8 @@ async function abrirFichaClinica(id, nome, email, telefone) {
         const terapeutica = await resTerap.json();
 
         const observacoesFhir = await resObsFhir.json();
+
+        const temperaturas = await resTemps.json();
 
 
 
@@ -270,6 +286,23 @@ async function abrirFichaClinica(id, nome, email, telefone) {
 
             });
 
+        }
+
+        // ---- Renderizar Temperaturas Manuais ----
+        if (listaTemperaturas) {
+            listaTemperaturas.innerHTML = '';
+            if (!Array.isArray(temperaturas) || temperaturas.length === 0) {
+                listaTemperaturas.innerHTML = '<li style="color:var(--text-muted); font-size:13px;">Sem temperaturas registadas manualmente.</li>';
+            } else {
+                temperaturas.forEach((t) => {
+                    const dataFormatada = new Date(t.data_efetiva).toLocaleString('pt-PT');
+                    listaTemperaturas.innerHTML += `
+                        <li style="padding: 8px 0; border-bottom: 1px dashed #e5e7eb; font-size: 13px; display:flex; justify-content:space-between; gap:8px;">
+                            <span>📅 ${dataFormatada}</span>
+                            <strong style="color:#ef4444;">🌡️ ${Number(t.valor).toFixed(1)} ${escaparHTML(t.unidade || 'ºC')}</strong>
+                        </li>`;
+                });
+            }
         }
 
 
@@ -414,6 +447,70 @@ async function abrirFichaClinica(id, nome, email, telefone) {
 
     }
 
+}
+
+async function gravarTemperatura() {
+    if (!utenteFichaAtualId) return;
+
+    const valorBruto = getInputValue('input-temp-valor').trim().replace(',', '.');
+    const temperatura = Number(valorBruto);
+    const dataInput = getInputValue('input-temp-data');
+    const dataEfetiva = dataInput ? new Date(dataInput).toISOString() : new Date().toISOString();
+
+    if (Number.isNaN(temperatura)) {
+        alert('Introduza uma temperatura válida.');
+        return;
+    }
+
+    if (temperatura < 30 || temperatura > 45) {
+        alert('Temperatura fora do intervalo esperado (30ºC a 45ºC).');
+        return;
+    }
+
+    try {
+        const res = await fetch(`${API_URL}/utentes/${utenteFichaAtualId}/temperatura`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                temperatura,
+                data_efetiva: dataEfetiva
+            })
+        });
+
+        if (!res.ok) {
+            const erro = await res.json().catch(() => ({}));
+            alert(`Erro ao guardar temperatura: ${erro.error || res.statusText}`);
+            return;
+        }
+
+        setInputValue('input-temp-valor', '');
+        alert('Temperatura registada com sucesso.');
+
+        await abrirFichaClinica(utenteFichaAtualId, document.getElementById('prof-nome').innerText, '', '');
+        await carregarObservacoesFhirDoUtente(utenteFichaAtualId);
+    } catch (err) {
+        console.error('Erro ao guardar temperatura:', err);
+        alert('Erro de comunicação ao guardar temperatura.');
+    }
+}
+
+async function eliminarUtente(id, nome) {
+    if (!confirm(`Tem a certeza que pretende eliminar o utente "${nome}" (ID: ${id})? Esta ação é irreversível.`)) return;
+
+    try {
+        const res = await fetch(`${API_URL}/utentes/${id}`, { method: 'DELETE' });
+        if (!res.ok) {
+            const err = await res.json().catch(() => ({}));
+            alert('Erro ao eliminar utente: ' + (err.error || res.statusText));
+            return;
+        }
+
+        alert('Utente eliminado com sucesso');
+        await carregarUtentes();
+    } catch (err) {
+        console.error('Erro ao eliminar utente:', err);
+        alert('Erro ao eliminar utente. Veja a consola para detalhes.');
+    }
 }
 
 
@@ -1033,7 +1130,7 @@ async function carregarObservacoesFHIR() {
 
                 <div style="color: var(--text-muted); font-size: 12px; margin-top: 3px;">
 
-                    🔗 Paciente: ${escaparHTML(obs.subject)}
+                    🔗 Paciente: ${escaparHTML(obs.patientName || obs.subject)}
 
                 </div>
 

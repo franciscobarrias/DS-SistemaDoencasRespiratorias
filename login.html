@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>SaudINOB - Login</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  <style>
+    .login-wrap {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 10px 0 30px;
+    }
+
+    .login-grid {
+      display: grid;
+      grid-template-columns: minmax(320px, 460px);
+      justify-content: center;
+    }
+
+    .login-card {
+      background: var(--card-bg);
+      border-radius: 16px;
+      padding: 24px;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+    }
+
+    .login-card h2 {
+      font-size: 22px;
+      margin-bottom: 8px;
+      color: var(--primary);
+    }
+
+    .login-subtitle {
+      color: var(--text-muted);
+      font-size: 14px;
+      margin-bottom: 16px;
+    }
+
+    .login-note {
+      margin-top: 12px;
+      font-size: 12px;
+      color: var(--text-muted);
+      text-align: center;
+      border-top: 1px solid #e5e7eb;
+      padding-top: 10px;
+    }
+
+    .back-link {
+      margin-top: 12px;
+      text-align: center;
+      font-size: 13px;
+    }
+
+    .back-link a {
+      color: var(--secondary);
+      text-decoration: none;
+      font-weight: 600;
+    }
+
+    .back-link a:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+  <header class="main-header">
+    <div class="header-content">
+      <h1>Clínica SaudINOB</h1>
+      <p>Painel de Monitorização Respiratória</p>
+    </div>
+  </header>
+
+  <main class="login-wrap">
+    <div class="login-grid">
+      <section class="login-card">
+        <h2>Iniciar Sessão</h2>
+        <p class="login-subtitle">Autentique-se para aceder aos dados clínicos.</p>
+
+                <form method="post" action="/" class="form-group">
+          <input name="username" placeholder="Utilizador" autocomplete="username" required />
+          <input name="password" type="password" placeholder="Password" autocomplete="current-password" required />
+          <button type="submit" class="btn-blue full-width">Entrar</button>
+        </form>
+
+        <p class="login-note">Credenciais definidas em `ADMIN_USER` e `ADMIN_PASS`.</p>
+        <p class="back-link"><a href="/">Atualizar login</a></p>
+      </section>
+    </div>
+  </main>
+</body>
+</html>

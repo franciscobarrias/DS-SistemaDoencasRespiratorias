@@ -74,3 +74,14 @@ CREATE TABLE observacoes_fhir (
     data_sincronizacao DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (utente_id) REFERENCES utentes (id) ON DELETE CASCADE
 );
+
+-- Tabela de Temperaturas manuais (registo local na ficha do utente)
+CREATE TABLE temperaturas_manuais (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    utente_id INTEGER NOT NULL,
+    valor REAL NOT NULL,
+    unidade TEXT DEFAULT 'ºC',
+    data_efetiva DATETIME,
+    data_registo DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (utente_id) REFERENCES utentes (id) ON DELETE CASCADE
+);

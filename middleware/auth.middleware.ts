@@ -1,10 +1,35 @@
-function autenticar(req: any, res: any, next: any): void {
-    // Middleware simples de autenticação
-    // Por enquanto, apenas passa para o próximo middleware/rota
-    // Pode ser expandido com JWT ou outro sistema de autenticação
-    next();
+function ensureAuthenticated(req: any, res: any, next: any): void {
+    try {
+        if (req.session && req.session.authenticated) {
+            return next();
+        }
+
+        // If request expects JSON (API/XHR), reply 401, otherwise redirect to login page
+        const accepts = req.headers && req.headers.accept ? req.headers.accept : '';
+        if (req.xhr || accepts.indexOf('application/json') !== -1) {
+            return res.status(401).json({ error: 'Unauthorized' });
+        }
+
+        return res.redirect('/');
+    } catch (err) {
+        return res.status(500).send('Auth error');
+    }
 }
 
-module.exports = { autenticar };
+function ensureRole(role: string) {
+    return (req: any, res: any, next: any) => {
+        try {
+            if (req.session && req.session.role === role) return next();
+            if (req.xhr || (req.headers && req.headers.accept && req.headers.accept.indexOf('application/json') !== -1)) {
+                return res.status(403).json({ error: 'Forbidden' });
+            }
+            return res.status(403).send('Forbidden');
+        } catch (err) {
+            return res.status(500).send('Role check error');
+        }
+    };
+}
+
+module.exports = { ensureAuthenticated, autenticar: ensureAuthenticated, ensureRole };
 
 export {};

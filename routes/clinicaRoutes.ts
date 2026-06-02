@@ -15,6 +15,8 @@ router.get('/utentes/:id/history', clinicaController.getHistoricoUtente);
 // ==========================================
 router.get('/utentes/:id/terapeutica', clinicaController.getTerapeutica); // Listar medicamentos do utente
 router.post('/utentes/:id/terapeutica', clinicaController.addMedicamento); // Gravar novo medicamento
+router.post('/utentes/:id/temperatura', clinicaController.addTemperatura); // Registar temperatura manual
+router.get('/utentes/:id/temperaturas', clinicaController.getTemperaturas); // Listar temperaturas manuais
 
 // ==========================================
 // 📊 NOVAS ROTAS: Observações FHIR (Medicamentos, Temperatura, etc.)
@@ -36,6 +38,8 @@ router.get('/sintomas', clinicaController.getAllSintomas); // Listar todos os si
 router.get('/sintomas/:utente_id', clinicaController.getSintomas); // Listar sintomas de um utente
 router.post('/sintomas', clinicaController.addSintoma); // Gravar novo sintoma
 router.delete('/sintomas/:id', clinicaController.deleteSintoma); // Eliminar sintoma pelo caixote do lixo
+// Eliminar utente e dados relacionados
+router.delete('/utentes/:id', clinicaController.deleteUtente);
 
 module.exports = router;
 

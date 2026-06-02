@@ -33,6 +33,22 @@ const db = new sqlite3.Database(dbPath, (err) => {
                         console.log('📦 Tabela "terapeutica" verificada/criada com sucesso.');
                     }
                 });
+
+                db.run(`CREATE TABLE IF NOT EXISTS temperaturas_manuais (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    utente_id INTEGER NOT NULL,
+                    valor REAL NOT NULL,
+                    unidade TEXT DEFAULT 'ºC',
+                    data_efetiva DATETIME DEFAULT CURRENT_TIMESTAMP,
+                    data_registo DATETIME DEFAULT CURRENT_TIMESTAMP,
+                    FOREIGN KEY(utente_id) REFERENCES utentes(id) ON DELETE CASCADE
+                )`, (errTempTable) => {
+                    if (errTempTable) {
+                        console.error('❌ Erro ao criar a tabela temperaturas_manuais:', errTempTable.message);
+                    } else {
+                        console.log('📦 Tabela "temperaturas_manuais" verificada/criada com sucesso.');
+                    }
+                });
             }
         });
     }

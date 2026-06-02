@@ -418,6 +418,32 @@ const clinicaController = {
         });
     },
 
+    // Eliminar utente e todos os registos dependentes (sintomas, terapeutica, temperaturas_manuais, observacoes_fhir, avaliacoes, alertas)
+    deleteUtente: async (req, res) => {
+        const { id } = req.params;
+        if (!id) return res.status(400).json({ error: 'ID do utente é obrigatório' });
+
+        try {
+            // Wrap in a transaction for consistency
+            await dbRun('BEGIN TRANSACTION');
+
+            await dbRun('DELETE FROM sintomas WHERE utente_id = ?', [id]);
+            await dbRun('DELETE FROM terapeutica WHERE utente_id = ?', [id]);
+            await dbRun('DELETE FROM temperaturas_manuais WHERE utente_id = ?', [id]);
+            await dbRun('DELETE FROM observacoes_fhir WHERE utente_id = ?', [id]);
+            await dbRun('DELETE FROM avaliacoes_carat WHERE utente_id = ?', [id]);
+            await dbRun('DELETE FROM alertas WHERE utente_id = ?', [id]);
+            await dbRun('DELETE FROM utentes WHERE id = ?', [id]);
+
+            await dbRun('COMMIT');
+            return res.json({ message: 'Utente e dados relacionados eliminados com sucesso.' });
+        } catch (err) {
+            try { await dbRun('ROLLBACK'); } catch (e) { /* ignore */ }
+            console.error('Erro ao eliminar utente:', err);
+            return res.status(500).json({ error: String(err) });
+        }
+    },
+
     // Listar as avaliações CARAT para alimentar a tabela do Dashboard
     getAvaliacoes: (req, res) => {
         db.all("SELECT * FROM avaliacoes_carat ORDER BY data DESC", [], (err, rows) => {
@@ -448,6 +474,62 @@ const clinicaController = {
             if (err) return res.status(500).json({ error: err.message });
             res.status(201).json({ id: this.lastID, mensagem: "Medicamento adicionado com sucesso!" });
         });
+    },
+
+    // Registar temperatura manual na ficha individual do utente
+    addTemperatura: async (req, res) => {
+        try {
+            const { id } = req.params;
+            const temperaturaNumero = Number(req.body?.temperatura);
+            const dataEfetiva = req.body?.data_efetiva ? String(req.body.data_efetiva) : new Date().toISOString();
+
+            if (!id) {
+                return res.status(400).json({ error: 'ID do utente é obrigatório' });
+            }
+
+            if (Number.isNaN(temperaturaNumero)) {
+                return res.status(400).json({ error: 'Temperatura inválida' });
+            }
+
+            if (temperaturaNumero < 30 || temperaturaNumero > 45) {
+                return res.status(400).json({ error: 'Temperatura fora do intervalo esperado (30ºC a 45ºC)' });
+            }
+
+            const result = await dbRun(
+                `INSERT INTO temperaturas_manuais
+                 (utente_id, valor, unidade, data_efetiva)
+                 VALUES (?, ?, ?, ?)`,
+                [id, temperaturaNumero, 'ºC', dataEfetiva]
+            );
+
+            return res.status(201).json({
+                id: result.lastID,
+                mensagem: 'Temperatura registada com sucesso'
+            });
+        } catch (err) {
+            console.error('Erro ao registar temperatura:', err);
+            return res.status(500).json({ error: String(err) });
+        }
+    },
+
+    // Listar temperaturas registadas manualmente na ficha do utente
+    getTemperaturas: async (req, res) => {
+        try {
+            const { id } = req.params;
+            const rows = await dbAll(
+                `SELECT id, utente_id, valor, unidade, data_efetiva, data_registo
+                 FROM temperaturas_manuais
+                 WHERE utente_id = ?
+                 ORDER BY data_efetiva DESC, id DESC
+                 LIMIT 30`,
+                [id]
+            );
+
+            return res.status(200).json(rows || []);
+        } catch (err) {
+            console.error('Erro ao obter temperaturas manuais:', err);
+            return res.status(500).json({ error: String(err) });
+        }
     },
 
     // Sincronizar observações FHIR para um patient específico
@@ -552,9 +634,13 @@ const clinicaController = {
         try {
             const { id } = req.params;
 
-            const observacoes = await new Promise<any[]>((resolve, reject) => {
+                        const observacoes = await new Promise<any[]>((resolve, reject) => {
                 db.all(
-                    'SELECT * FROM observacoes_fhir WHERE utente_id = ? ORDER BY data_efetiva DESC LIMIT 50',
+                                        `SELECT * FROM observacoes_fhir
+                                         WHERE utente_id = ?
+                                             AND (fhir_observation_id IS NULL OR fhir_observation_id NOT LIKE 'manual-temp-%')
+                                         ORDER BY data_efetiva DESC
+                                         LIMIT 50`,
                     [id],
                     (err, rows) => {
                         if (err) return reject(err);
