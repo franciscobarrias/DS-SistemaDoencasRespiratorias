@@ -8,86 +8,298 @@
   <link rel="stylesheet" href="style.css">
   <style>
     .login-wrap {
-      max-width: 1200px;
+      max-width: 900px;
       margin: 0 auto;
-      padding: 10px 0 30px;
+      padding: 20px 0 40px;
     }
 
     .login-grid {
       display: grid;
-      grid-template-columns: minmax(320px, 460px);
+      grid-template-columns: minmax(320px, 500px);
       justify-content: center;
     }
 
     .login-card {
       background: var(--card-bg);
       border-radius: 16px;
-      padding: 24px;
-      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+      padding: 32px;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+      border: 1px solid rgba(0, 0, 0, 0.05);
     }
 
     .login-card h2 {
-      font-size: 22px;
+      font-size: 24px;
       margin-bottom: 8px;
       color: var(--primary);
+      font-weight: 700;
     }
 
     .login-subtitle {
       color: var(--text-muted);
       font-size: 14px;
-      margin-bottom: 16px;
+      margin-bottom: 24px;
+      line-height: 1.5;
     }
 
     .login-note {
-      margin-top: 12px;
+      margin-top: 16px;
       font-size: 12px;
       color: var(--text-muted);
       text-align: center;
-      border-top: 1px solid #e5e7eb;
-      padding-top: 10px;
+      border-top: 1px solid var(--bg);
+      padding-top: 12px;
     }
 
-    .back-link {
-      margin-top: 12px;
-      text-align: center;
-      font-size: 13px;
+    /* Estilos para seleção de tipo de utilizador */
+    .user-type-selection {
+      display: none;
     }
 
-    .back-link a {
+    .user-type-selection.active {
+      display: block;
+    }
+
+    .user-type-buttons {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+
+    .user-type-btn {
+      padding: 16px;
+      border: 2px solid var(--bg);
+      border-radius: 12px;
+      background: var(--card-bg);
+      cursor: pointer;
+      transition: all 0.3s ease;
+      text-align: left;
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--text-main);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .user-type-btn:hover {
+      border-color: var(--secondary);
+      background: rgba(59, 130, 246, 0.05);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15);
+    }
+
+    .user-type-btn.selected {
+      border-color: var(--secondary);
+      background: rgba(59, 130, 246, 0.1);
       color: var(--secondary);
+    }
+
+    .user-type-icon {
+      font-size: 24px;
+      min-width: 30px;
+    }
+
+    .user-type-content {
+      flex: 1;
+    }
+
+    .user-type-content strong {
+      display: block;
+      color: var(--text-main);
+      margin-bottom: 4px;
+    }
+
+    .user-type-content p {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin: 0;
+      font-weight: 400;
+    }
+
+    .login-form {
+      display: none;
+    }
+
+    .login-form.active {
+      display: block;
+    }
+
+    .form-back-btn {
+      background: none;
+      border: none;
+      color: var(--secondary);
+      cursor: pointer;
+      font-size: 14px;
+      padding: 0;
+      margin-bottom: 20px;
       text-decoration: none;
+      font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      transition: all 0.2s ease;
+    }
+
+    .form-back-btn:hover {
+      color: var(--primary);
+      transform: translateX(-4px);
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .form-group input {
+      padding: 12px;
+      border: 1px solid var(--bg);
+      border-radius: 8px;
+      font-size: 14px;
+      background: var(--card-bg);
+      color: var(--text-main);
+      transition: all 0.2s ease;
+    }
+
+    .form-group input:focus {
+      outline: none;
+      border-color: var(--secondary);
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    }
+
+    .form-group input::placeholder {
+      color: var(--text-muted);
+    }
+
+    .btn-blue {
+      padding: 12px !important;
+      font-size: 15px !important;
+      margin-top: 4px;
       font-weight: 600;
     }
 
-    .back-link a:hover {
-      text-decoration: underline;
+    .header-content {
+      text-align: center;
     }
   </style>
 </head>
 <body>
   <header class="main-header">
-    <div class="header-content">
-      <h1>Clínica SaudINOB</h1>
-      <p>Painel de Monitorização Respiratória</p>
+    <div style="display:flex; gap:10px; align-items:center; justify-content: space-between; max-width: 1200px; margin: 0 auto;">
+      <button class="theme-toggle" onclick="toggleTheme()" id="btn-theme">🌙</button>
+      <div class="header-content" style="flex: 1;">
+        <h1>Clínica SaudINOB</h1>
+        <p>Painel de Monitorização Respiratória</p>
+      </div>
+      <div style="width: 50px;"></div>
     </div>
   </header>
 
   <main class="login-wrap">
     <div class="login-grid">
       <section class="login-card">
-        <h2>Iniciar Sessão</h2>
-        <p class="login-subtitle">Autentique-se para aceder aos dados clínicos.</p>
+        <!-- Seleção de Tipo de Utilizador -->
+        <div class="user-type-selection active" id="userTypeSelection">
+          <h2>Selecione o Tipo de Acesso</h2>
+          <p class="login-subtitle">Escolha o seu perfil para continuar e faça login com as credenciais fornecidas.</p>
+          
+          <div class="user-type-buttons">
+            <button type="button" class="user-type-btn" data-type="paciente" onclick="selectUserType('paciente')">
+              <span class="user-type-icon">👤</span>
+              <div class="user-type-content">
+                <strong>Doente</strong>
+                <p>Registar sintomas e responder ao CARAT</p>
+              </div>
+            </button>
+            
+            <button type="button" class="user-type-btn" data-type="medico" onclick="selectUserType('medico')">
+              <span class="user-type-icon">👨‍⚕️</span>
+              <div class="user-type-content">
+                <strong>Médico</strong>
+                <p>Consultar dados de pacientes e acompanhamento</p>
+              </div>
+            </button>
+            
+            <button type="button" class="user-type-btn" data-type="admin" onclick="selectUserType('admin')">
+              <span class="user-type-icon">⚙️</span>
+              <div class="user-type-content">
+                <strong>Administrador</strong>
+                <p>Registar e gerir médicos e doentes</p>
+              </div>
+            </button>
+          </div>
+        </div>
 
-                <form method="post" action="/" class="form-group">
-          <input name="username" placeholder="Utilizador" autocomplete="username" required />
-          <input name="password" type="password" placeholder="Password" autocomplete="current-password" required />
-          <button type="submit" class="btn-blue full-width">Entrar</button>
-        </form>
+        <!-- Formulário de Login -->
+        <div class="login-form" id="loginForm">
+          <button type="button" class="form-back-btn" onclick="backToUserType()">← Voltar</button>
+          <h2 id="loginTitle">Iniciar Sessão</h2>
+          <p class="login-subtitle" id="loginSubtitle">Autentique-se para aceder.</p>
 
-        <p class="login-note">Credenciais definidas em `ADMIN_USER` e `ADMIN_PASS`.</p>
-        <p class="back-link"><a href="/">Atualizar login</a></p>
+          <form method="post" action="/" class="form-group" id="authForm">
+            <input type="hidden" name="userType" id="userTypeInput" />
+            <input name="username" placeholder="Utilizador" autocomplete="username" required />
+            <input name="password" type="password" placeholder="Password" autocomplete="current-password" required />
+            <button type="submit" class="btn-blue full-width">Entrar</button>
+          </form>
+
+          <p class="login-note">Use as credenciais configuradas no sistema.</p>
+        </div>
       </section>
     </div>
   </main>
+
+  <script>
+    // Tema
+    function toggleTheme() {
+      const html = document.documentElement;
+      const isDark = html.getAttribute('data-theme') === 'dark';
+      html.setAttribute('data-theme', isDark ? 'light' : 'dark');
+      localStorage.setItem('theme', isDark ? 'light' : 'dark');
+      document.getElementById('btn-theme').textContent = isDark ? '🌙' : '☀️';
+    }
+
+    // Carregar tema guardado
+    const savedTheme = localStorage.getItem('theme') || 'light';
+    document.documentElement.setAttribute('data-theme', savedTheme);
+    document.getElementById('btn-theme').textContent = savedTheme === 'dark' ? '☀️' : '🌙';
+
+    function selectUserType(type) {
+      const userTypeNames = {
+        paciente: 'Doente',
+        medico: 'Médico',
+        admin: 'Administrador'
+      };
+
+      const userTypeSubtitles = {
+        paciente: 'Autentique-se para registar sintomas',
+        medico: 'Autentique-se para consultar dados',
+        admin: 'Autentique-se para gerenciar utilizadores'
+      };
+
+      // Mostrar formulário de login
+      document.getElementById('userTypeSelection').classList.remove('active');
+      document.getElementById('loginForm').classList.add('active');
+
+      // Atualizar título e subtítulo
+      document.getElementById('loginTitle').textContent = `Login - ${userTypeNames[type]}`;
+      document.getElementById('loginSubtitle').textContent = userTypeSubtitles[type];
+
+      // Guardar tipo de utilizador
+      document.getElementById('userTypeInput').value = type;
+
+      // Atualizar URL ou ação do formulário conforme necessário
+      const form = document.getElementById('authForm');
+      form.action = `/?type=${type}`;
+    }
+
+    function backToUserType() {
+      document.getElementById('userTypeSelection').classList.add('active');
+      document.getElementById('loginForm').classList.remove('active');
+      document.getElementById('authForm').reset();
+    }
+  </script>
 </body>
 </html>

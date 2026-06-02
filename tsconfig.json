@@ -10,7 +10,6 @@
     "allowSyntheticDefaultImports": true,
     "resolveJsonModule": true,
     "moduleResolution": "node",
-    "baseUrl": ".",
     "typeRoots": ["./node_modules/@types"],
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true

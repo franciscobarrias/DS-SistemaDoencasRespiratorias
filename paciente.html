@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SaudINOB - Portal do Doente</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .patient-container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .patient-welcome {
+            background: linear-gradient(135deg, var(--primary, #1e3a8a), var(--secondary, #3b82f6));
+            color: white;
+            padding: 24px;
+            border-radius: 12px;
+            margin-bottom: 24px;
+        }
+
+        .patient-welcome h2 {
+            margin: 0 0 8px 0;
+        }
+
+        .patient-welcome p {
+            margin: 0;
+            opacity: 0.9;
+        }
+
+        .action-buttons {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .action-card {
+            background: var(--card-bg);
+            border: 2px solid #e5e7eb;
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .action-card:hover {
+            border-color: var(--primary);
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.2);
+            transform: translateY(-2px);
+        }
+
+        .action-icon {
+            font-size: 36px;
+        }
+
+        .action-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--text);
+        }
+
+        .action-desc {
+            font-size: 13px;
+            color: var(--text-muted);
+        }
+
+        .symptoms-section {
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 24px;
+        }
+
+        .symptoms-section h3 {
+            margin-top: 0;
+            color: var(--primary);
+        }
+
+        .symptom-item {
+            display: flex;
+            gap: 16px;
+            padding: 12px 0;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        .symptom-item:last-child {
+            border-bottom: none;
+        }
+
+        .symptom-checkbox {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+        }
+
+        .symptom-details {
+            flex: 1;
+        }
+
+        .symptom-name {
+            font-weight: 600;
+            color: var(--text);
+        }
+
+        .symptom-desc {
+            font-size: 13px;
+            color: var(--text-muted);
+            margin-top: 4px;
+        }
+
+        .recent-assessments {
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 24px;
+        }
+
+        .assessment-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        .assessment-item:last-child {
+            border-bottom: none;
+        }
+
+        .assessment-date {
+            color: var(--text-muted);
+            font-size: 13px;
+        }
+
+        .assessment-score {
+            background: rgba(59, 130, 246, 0.1);
+            color: var(--primary);
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-weight: 600;
+        }
+
+        .logout-btn {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: var(--text-muted);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+        }
+
+        .logout-btn:hover {
+            background: var(--danger);
+        }
+    </style>
+</head>
+<body>
+    <header class="main-header">
+        <div style="display:flex; gap:10px; align-items:center;">
+            <button class="theme-toggle" onclick="toggleTheme()" id="btn-theme">🌙</button>
+            <button class="logout-btn" onclick="logout()">Terminar Sessão</button>
+        </div>
+
+        <div class="header-content">
+            <h1>SaudINOB</h1>
+            <p>Portal de Monitorização de Saúde</p>
+        </div>
+    </header>
+
+    <div class="patient-container">
+        <div class="patient-welcome">
+            <h2>Bem-vindo, <span id="patient-name">Doente</span>!</h2>
+            <p>Monitorize a sua saúde respiratória através de questionários simples</p>
+        </div>
+
+        <div class="action-buttons">
+            <a href="questionario.html" class="action-card" style="text-decoration: none;">
+                <div class="action-icon">📋</div>
+                <div class="action-title">Responder Avaliação CARAT</div>
+                <div class="action-desc">Responda ao questionário de avaliação</div>
+            </a>
+
+            <div class="action-card" onclick="openSymptoms()">
+                <div class="action-icon">🤒</div>
+                <div class="action-title">Registar Sintomas</div>
+                <div class="action-desc">Indique os sintomas que está a sentir</div>
+            </div>
+
+            <div class="action-card" onclick="viewProfile()">
+                <div class="action-icon">👤</div>
+                <div class="action-title">Ver Perfil</div>
+                <div class="action-desc">Dados pessoais e contactos</div>
+            </div>
+        </div>
+
+        <div class="symptoms-section" id="symptomsModal" style="display: none;">
+            <h3>Registar Sintomas Atuais</h3>
+            <p style="color: var(--text-muted); font-size: 13px;">Selecione os sintomas que está a experimentar:</p>
+            
+            <div class="symptom-item">
+                <input type="checkbox" class="symptom-checkbox" id="symptom-tosse">
+                <div class="symptom-details">
+                    <div class="symptom-name">Tosse</div>
+                    <div class="symptom-desc">Presença de tosse seca ou produtiva</div>
+                </div>
+            </div>
+
+            <div class="symptom-item">
+                <input type="checkbox" class="symptom-checkbox" id="symptom-dispneia">
+                <div class="symptom-details">
+                    <div class="symptom-name">Dispneia</div>
+                    <div class="symptom-desc">Dificuldade em respirar ou falta de ar</div>
+                </div>
+            </div>
+
+            <div class="symptom-item">
+                <input type="checkbox" class="symptom-checkbox" id="symptom-sibilos">
+                <div class="symptom-details">
+                    <div class="symptom-name">Sibilos</div>
+                    <div class="symptom-desc">Sons anormais ao respirar (assobios)</div>
+                </div>
+            </div>
+
+            <div class="symptom-item">
+                <input type="checkbox" class="symptom-checkbox" id="symptom-aperto">
+                <div class="symptom-details">
+                    <div class="symptom-name">Aperto no Peito</div>
+                    <div class="symptom-desc">Sensação de opressão ou aperto torácico</div>
+                </div>
+            </div>
+
+            <div class="symptom-item">
+                <input type="checkbox" class="symptom-checkbox" id="symptom-expectoracao">
+                <div class="symptom-details">
+                    <div class="symptom-name">Expectoração</div>
+                    <div class="symptom-desc">Produção de muco ou fleuma</div>
+                </div>
+            </div>
+
+            <div style="display: flex; gap: 12px; margin-top: 24px;">
+                <button class="btn-blue" onclick="submitSymptoms()">Guardar Sintomas</button>
+                <button class="btn-gray" onclick="closeSymptoms()">Cancelar</button>
+            </div>
+        </div>
+
+        <div class="recent-assessments">
+            <h3 style="margin-top: 0;">Avaliações Recentes</h3>
+            <div id="assessments-list">
+                <p style="color: var(--text-muted); text-align: center; padding: 24px;">Nenhuma avaliação registada ainda</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Tema
+        function toggleTheme() {
+            const html = document.documentElement;
+            const isDark = html.getAttribute('data-theme') === 'dark';
+            html.setAttribute('data-theme', isDark ? 'light' : 'dark');
+            localStorage.setItem('theme', isDark ? 'light' : 'dark');
+            document.getElementById('btn-theme').textContent = isDark ? '🌙' : '☀️';
+        }
+
+        // Carregar tema guardado
+        const savedTheme = localStorage.getItem('theme') || 'light';
+        document.documentElement.setAttribute('data-theme', savedTheme);
+        document.getElementById('btn-theme').textContent = savedTheme === 'dark' ? '☀️' : '🌙';
+
+        function logout() {
+            if (confirm('Tem a certeza que deseja terminar a sessão?')) {
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.action = '/logout';
+                document.body.appendChild(form);
+                form.submit();
+            }
+        }
+
+        function openSymptoms() {
+            document.getElementById('symptomsModal').style.display = 'block';
+        }
+
+        function closeSymptoms() {
+            document.getElementById('symptomsModal').style.display = 'none';
+            document.querySelectorAll('.symptom-checkbox').forEach(cb => cb.checked = false);
+        }
+
+        function submitSymptoms() {
+            const symptoms = [];
+            document.querySelectorAll('.symptom-checkbox:checked').forEach(cb => {
+                symptoms.push(cb.id.replace('symptom-', ''));
+            });
+
+            if (symptoms.length === 0) {
+                alert('Por favor, selecione pelo menos um sintoma');
+                return;
+            }
+
+            // Aqui enviar para backend
+            console.log('Sintomas registados:', symptoms);
+            alert('Sintomas registados com sucesso!');
+            closeSymptoms();
+        }
+
+        function viewProfile() {
+            alert('Funcionalidade de perfil em desenvolvimento');
+        }
+
+        // Carregar nome do doente
+        function loadPatientInfo() {
+            const patientName = localStorage.getItem('patientName') || 'Doente';
+            document.getElementById('patient-name').textContent = patientName;
+        }
+
+        // Carregar avaliações recentes
+        function loadAssessments() {
+            // Aqui carregar do backend
+            const assessmentsList = document.getElementById('assessments-list');
+            // Exemplo de dados
+            assessmentsList.innerHTML = `
+                <div class="assessment-item">
+                    <div>
+                        <div style="font-weight: 600;">Avaliação CARAT</div>
+                        <div class="assessment-date">2 de junho de 2026 às 14:30</div>
+                    </div>
+                    <div class="assessment-score">Score: 15</div>
+                </div>
+                <div class="assessment-item">
+                    <div>
+                        <div style="font-weight: 600;">Avaliação CARAT</div>
+                        <div class="assessment-date">1 de junho de 2026 às 10:15</div>
+                    </div>
+                    <div class="assessment-score">Score: 18</div>
+                </div>
+            `;
+        }
+
+        // Inicializar
+        loadPatientInfo();
+        loadAssessments();
+    </script>
+</body>
+</html>

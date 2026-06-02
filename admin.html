@@ -1,0 +1,600 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SaudINOB - Painel Administrativo</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .admin-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .tabs-navigation {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 24px;
+            border-bottom: 2px solid #e5e7eb;
+        }
+
+        .tab-btn {
+            background: none;
+            border: none;
+            padding: 12px 20px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            color: var(--text-muted);
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s ease;
+            margin-bottom: -2px;
+        }
+
+        .tab-btn:hover {
+            color: var(--primary);
+        }
+
+        .tab-btn.active {
+            color: var(--primary);
+            border-bottom-color: var(--primary);
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .admin-card {
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 24px;
+            border: 1px solid #e5e7eb;
+        }
+
+        .admin-card h3 {
+            margin-top: 0;
+            color: var(--primary);
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 16px;
+            margin-bottom: 16px;
+        }
+
+        .form-group-vertical {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .form-group-vertical label {
+            font-weight: 600;
+            color: var(--text);
+            font-size: 14px;
+        }
+
+        .form-group-vertical input,
+        .form-group-vertical select {
+            padding: 10px;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+
+        .form-group-vertical input:focus,
+        .form-group-vertical select:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+
+        .form-full {
+            grid-column: 1 / -1;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 12px;
+            margin-top: 16px;
+        }
+
+        .button-group button {
+            flex: 1;
+            padding: 10px;
+            border: none;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .table-container {
+            overflow-x: auto;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+        }
+
+        .admin-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+        }
+
+        .admin-table thead {
+            background: #f9fafb;
+            border-bottom: 2px solid #e5e7eb;
+        }
+
+        .admin-table th {
+            padding: 12px;
+            text-align: left;
+            font-weight: 600;
+            color: var(--text);
+        }
+
+        .admin-table td {
+            padding: 12px;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        .admin-table tbody tr:hover {
+            background: rgba(59, 130, 246, 0.05);
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 8px;
+        }
+
+        .action-btn {
+            padding: 6px 12px;
+            border: none;
+            border-radius: 4px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .btn-edit {
+            background: #3b82f6;
+            color: white;
+        }
+
+        .btn-edit:hover {
+            background: #2563eb;
+        }
+
+        .btn-delete {
+            background: #ef4444;
+            color: white;
+        }
+
+        .btn-delete:hover {
+            background: #dc2626;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            padding: 20px;
+            border-radius: 12px;
+            text-align: center;
+        }
+
+        .stat-number {
+            font-size: 32px;
+            font-weight: 700;
+            margin: 10px 0;
+        }
+
+        .stat-label {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
+        .logout-btn {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: var(--text-muted);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+        }
+
+        .logout-btn:hover {
+            background: var(--danger);
+        }
+
+        .search-bar {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            margin-bottom: 16px;
+            font-size: 14px;
+        }
+
+        .alert-message {
+            padding: 12px 16px;
+            border-radius: 6px;
+            margin-bottom: 16px;
+            display: none;
+        }
+
+        .alert-success {
+            background: #d1fae5;
+            color: #065f46;
+            display: block;
+        }
+
+        .alert-error {
+            background: #fee2e2;
+            color: #991b1b;
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <header class="main-header">
+        <div style="display:flex; gap:10px; align-items:center;">
+            <button class="theme-toggle" onclick="toggleTheme()" id="btn-theme">🌙</button>
+            <button class="logout-btn" onclick="logout()">Terminar Sessão</button>
+        </div>
+
+        <div class="header-content">
+            <h1>SaudINOB - Painel Administrativo</h1>
+            <p>Gestão de Médicos e Doentes</p>
+        </div>
+    </header>
+
+    <div class="admin-container">
+        <!-- Estatísticas -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-label">Total de Médicos</div>
+                <div class="stat-number" id="stat-medicos">-</div>
+            </div>
+            <div class="stat-card" style="background: linear-gradient(135deg, #10b981, #34d399);">
+                <div class="stat-label">Total de Doentes</div>
+                <div class="stat-number" id="stat-doentes">-</div>
+            </div>
+            <div class="stat-card" style="background: linear-gradient(135deg, #f59e0b, #fbbf24);">
+                <div class="stat-label">Médicos Ativos</div>
+                <div class="stat-number" id="stat-medicos-ativos">-</div>
+            </div>
+            <div class="stat-card" style="background: linear-gradient(135deg, #8b5cf6, #a78bfa);">
+                <div class="stat-label">Doentes Ativos</div>
+                <div class="stat-number" id="stat-doentes-ativos">-</div>
+            </div>
+        </div>
+
+        <!-- Abas de Navegação -->
+        <div class="tabs-navigation">
+            <button class="tab-btn active" onclick="switchTab('medicos')">👨‍⚕️ Médicos</button>
+            <button class="tab-btn" onclick="switchTab('doentes')">👤 Doentes</button>
+            <button class="tab-btn" onclick="switchTab('relatorios')">📊 Relatórios</button>
+        </div>
+
+        <!-- Aba: Médicos -->
+        <div id="medicos" class="tab-content active">
+            <div class="admin-card">
+                <h3>Registar Novo Médico</h3>
+                <div id="alert-medico" class="alert-message"></div>
+                
+                <div class="form-grid">
+                    <div class="form-group-vertical">
+                        <label>Nome Completo *</label>
+                        <input type="text" id="med-nome" placeholder="Dr. João Silva" required>
+                    </div>
+                    <div class="form-group-vertical">
+                        <label>Email *</label>
+                        <input type="email" id="med-email" placeholder="joao.silva@clinica.pt" required>
+                    </div>
+                    <div class="form-group-vertical">
+                        <label>Telefone</label>
+                        <input type="tel" id="med-telefone" placeholder="+351 212 345 678">
+                    </div>
+                    <div class="form-group-vertical">
+                        <label>Especialidade *</label>
+                        <select id="med-especialidade" required>
+                            <option value="">Selecione uma especialidade...</option>
+                            <option value="Pneumologia">Pneumologia</option>
+                            <option value="Medicina Geral">Medicina Geral</option>
+                            <option value="Alergologia">Alergologia</option>
+                            <option value="Imunologia">Imunologia</option>
+                        </select>
+                    </div>
+                    <div class="form-group-vertical">
+                        <label>Licença Médica *</label>
+                        <input type="text" id="med-licenca" placeholder="Número de licença" required>
+                    </div>
+                    <div class="form-group-vertical">
+                        <label>Password *</label>
+                        <input type="password" id="med-password" placeholder="Senha temporária" required>
+                    </div>
+                </div>
+
+                <div class="button-group">
+                    <button class="btn-blue" onclick="registarMedico()" style="flex: 1;">➕ Registar Médico</button>
+                    <button class="btn-gray" onclick="limparFormularioMedico()" style="flex: 1;">Limpar</button>
+                </div>
+            </div>
+
+            <div class="admin-card">
+                <h3>Lista de Médicos Registados</h3>
+                <input type="text" class="search-bar" id="search-medicos" placeholder="🔍 Procurar por nome ou email...">
+                
+                <div class="table-container">
+                    <table class="admin-table">
+                        <thead>
+                            <tr>
+                                <th>Nome</th>
+                                <th>Email</th>
+                                <th>Especialidade</th>
+                                <th>Telefone</th>
+                                <th>Status</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="medicos-table-body">
+                            <tr><td colspan="6" style="text-align: center; color: var(--text-muted);">Nenhum médico registado</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Aba: Doentes -->
+        <div id="doentes" class="tab-content">
+            <div class="admin-card">
+                <h3>Registar Novo Doente</h3>
+                <div id="alert-doente" class="alert-message"></div>
+                
+                <div class="form-grid">
+                    <div class="form-group-vertical">
+                        <label>Nome Completo *</label>
+                        <input type="text" id="doe-nome" placeholder="Pedro Santos" required>
+                    </div>
+                    <div class="form-group-vertical">
+                        <label>Email *</label>
+                        <input type="email" id="doe-email" placeholder="pedro.santos@email.com" required>
+                    </div>
+                    <div class="form-group-vertical">
+                        <label>Telefone</label>
+                        <input type="tel" id="doe-telefone" placeholder="+351 912 345 678">
+                    </div>
+                    <div class="form-group-vertical">
+                        <label>Data de Nascimento *</label>
+                        <input type="date" id="doe-nascimento" required>
+                    </div>
+                    <div class="form-group-vertical">
+                        <label>Número de Identidade</label>
+                        <input type="text" id="doe-identidade" placeholder="123456789">
+                    </div>
+                    <div class="form-group-vertical">
+                        <label>Médico Responsável *</label>
+                        <select id="doe-medico" required>
+                            <option value="">Selecione um médico...</option>
+                        </select>
+                    </div>
+                    <div class="form-group-vertical form-full">
+                        <label>Password *</label>
+                        <input type="password" id="doe-password" placeholder="Senha temporária" required>
+                    </div>
+                </div>
+
+                <div class="button-group">
+                    <button class="btn-green" onclick="registarDoente()" style="flex: 1;">➕ Registar Doente</button>
+                    <button class="btn-gray" onclick="limparFormularioDoente()" style="flex: 1;">Limpar</button>
+                </div>
+            </div>
+
+            <div class="admin-card">
+                <h3>Lista de Doentes Registados</h3>
+                <input type="text" class="search-bar" id="search-doentes" placeholder="🔍 Procurar por nome ou email...">
+                
+                <div class="table-container">
+                    <table class="admin-table">
+                        <thead>
+                            <tr>
+                                <th>Nome</th>
+                                <th>Email</th>
+                                <th>Data Nascimento</th>
+                                <th>Médico Responsável</th>
+                                <th>Status</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="doentes-table-body">
+                            <tr><td colspan="6" style="text-align: center; color: var(--text-muted);">Nenhum doente registado</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Aba: Relatórios -->
+        <div id="relatorios" class="tab-content">
+            <div class="admin-card">
+                <h3>📊 Relatórios de Atividade</h3>
+                <p style="color: var(--text-muted);">Funcionalidade em desenvolvimento...</p>
+                
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 16px; margin-top: 20px;">
+                    <button class="btn-blue" style="padding: 12px; border: none; border-radius: 6px; cursor: pointer;">
+                        📥 Exportar Relatório de Médicos
+                    </button>
+                    <button class="btn-green" style="padding: 12px; border: none; border-radius: 6px; cursor: pointer;">
+                        📥 Exportar Relatório de Doentes
+                    </button>
+                    <button class="btn-orange" style="padding: 12px; border: none; border-radius: 6px; cursor: pointer;">
+                        📊 Gerar Relatório de Atividades
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Tema
+        function toggleTheme() {
+            const html = document.documentElement;
+            const isDark = html.getAttribute('data-theme') === 'dark';
+            html.setAttribute('data-theme', isDark ? 'light' : 'dark');
+            localStorage.setItem('theme', isDark ? 'light' : 'dark');
+            document.getElementById('btn-theme').textContent = isDark ? '🌙' : '☀️';
+        }
+
+        // Carregar tema guardado
+        const savedTheme = localStorage.getItem('theme') || 'light';
+        document.documentElement.setAttribute('data-theme', savedTheme);
+        document.getElementById('btn-theme').textContent = savedTheme === 'dark' ? '☀️' : '🌙';
+
+        // Navegação de abas
+        function switchTab(tabName) {
+            // Esconder todas as abas
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // Remover classe active de todos os botões
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            
+            // Mostrar aba selecionada
+            document.getElementById(tabName).classList.add('active');
+            
+            // Ativar botão clicado
+            event.target.classList.add('active');
+        }
+
+        function logout() {
+            if (confirm('Tem a certeza que deseja terminar a sessão?')) {
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.action = '/logout';
+                document.body.appendChild(form);
+                form.submit();
+            }
+        }
+
+        // Funções para Médicos
+        function registarMedico() {
+            const nome = document.getElementById('med-nome').value;
+            const email = document.getElementById('med-email').value;
+            const telefone = document.getElementById('med-telefone').value;
+            const especialidade = document.getElementById('med-especialidade').value;
+            const licenca = document.getElementById('med-licenca').value;
+            const password = document.getElementById('med-password').value;
+
+            if (!nome || !email || !especialidade || !licenca || !password) {
+                showAlert('alert-medico', 'Por favor, preencha todos os campos obrigatórios.', 'error');
+                return;
+            }
+
+            // Aqui enviar para backend
+            console.log('Registando médico:', { nome, email, especialidade, licenca });
+            showAlert('alert-medico', `Médico ${nome} registado com sucesso!`, 'success');
+            limparFormularioMedico();
+        }
+
+        function limparFormularioMedico() {
+            document.getElementById('med-nome').value = '';
+            document.getElementById('med-email').value = '';
+            document.getElementById('med-telefone').value = '';
+            document.getElementById('med-especialidade').value = '';
+            document.getElementById('med-licenca').value = '';
+            document.getElementById('med-password').value = '';
+        }
+
+        // Funções para Doentes
+        function registarDoente() {
+            const nome = document.getElementById('doe-nome').value;
+            const email = document.getElementById('doe-email').value;
+            const nascimento = document.getElementById('doe-nascimento').value;
+            const medico = document.getElementById('doe-medico').value;
+            const password = document.getElementById('doe-password').value;
+
+            if (!nome || !email || !nascimento || !medico || !password) {
+                showAlert('alert-doente', 'Por favor, preencha todos os campos obrigatórios.', 'error');
+                return;
+            }
+
+            // Aqui enviar para backend
+            console.log('Registando doente:', { nome, email, nascimento, medico });
+            showAlert('alert-doente', `Doente ${nome} registado com sucesso!`, 'success');
+            limparFormularioDoente();
+        }
+
+        function limparFormularioDoente() {
+            document.getElementById('doe-nome').value = '';
+            document.getElementById('doe-email').value = '';
+            document.getElementById('doe-telefone').value = '';
+            document.getElementById('doe-nascimento').value = '';
+            document.getElementById('doe-identidade').value = '';
+            document.getElementById('doe-medico').value = '';
+            document.getElementById('doe-password').value = '';
+        }
+
+        // Funções auxiliares
+        function showAlert(elementId, message, type) {
+            const alertElement = document.getElementById(elementId);
+            alertElement.textContent = message;
+            alertElement.className = `alert-message alert-${type}`;
+            
+            // Auto-desaparecer após 5 segundos
+            setTimeout(() => {
+                alertElement.style.display = 'none';
+            }, 5000);
+        }
+
+        // Inicializar
+        function init() {
+            // Carregar estatísticas
+            document.getElementById('stat-medicos').textContent = '5';
+            document.getElementById('stat-doentes').textContent = '23';
+            document.getElementById('stat-medicos-ativos').textContent = '4';
+            document.getElementById('stat-doentes-ativos').textContent = '18';
+
+            // Carregar dropdown de médicos
+            const medicosSelect = document.getElementById('doe-medico');
+            // Dados de exemplo
+            const medicos = [
+                { id: 1, nome: 'Dr. João Silva' },
+                { id: 2, nome: 'Dra. Maria Santos' },
+                { id: 3, nome: 'Dr. Pedro Costa' }
+            ];
+            
+            medicos.forEach(medico => {
+                const option = document.createElement('option');
+                option.value = medico.id;
+                option.textContent = medico.nome;
+                medicosSelect.appendChild(option);
+            });
+        }
+
+        // Inicializar ao carregar a página
+        init();
+    </script>
+</body>
+</html>
