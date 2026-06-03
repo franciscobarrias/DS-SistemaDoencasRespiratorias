@@ -437,7 +437,7 @@
                 const res = await fetch('http://localhost:3000/utentes');
                 if (!res.ok) return;
                 const lista = await res.json();
-                const utente = Array.isArray(lista)
+                let utente = Array.isArray(lista)
                     ? lista.find(u =>
                         (storedEmail && u.email === storedEmail) ||
                         (storedPhone && u.telefone === storedPhone) ||
@@ -445,9 +445,17 @@
                     )
                     : null;
 
+                if (!utente && Array.isArray(lista) && lista.length === 1) {
+                    utente = lista[0];
+                }
+
                 if (utente && utente.id) {
                     localStorage.setItem('patientId', String(utente.id));
                     updateQuestionarioLink(utente.id);
+                } else if (Array.isArray(lista) && lista.length > 0) {
+                    localStorage.setItem('patientId', String(lista[0].id));
+                    updateQuestionarioLink(lista[0].id);
+                    console.warn('Nenhum doente autenticado definido; usando o primeiro utente disponível para o questionário.');
                 }
             } catch (err) {
                 console.warn('Não foi possível resolver o ID do paciente autenticado:', err);

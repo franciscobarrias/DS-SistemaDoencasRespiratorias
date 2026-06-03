@@ -217,7 +217,7 @@
                 if (!res.ok) throw new Error('Falha ao obter utentes');
                 const lista = await res.json();
 
-                const utente = Array.isArray(lista)
+                let utente = Array.isArray(lista)
                     ? lista.find(u =>
                         (storedId && String(u.id) === storedId) ||
                         (storedEmail && u.email === storedEmail) ||
@@ -226,12 +226,33 @@
                     )
                     : null;
 
+                if (!utente && Array.isArray(lista) && lista.length === 1) {
+                    utente = lista[0];
+                    info.innerText = 'Só existe um utente no sistema; usando esse utente para a avaliação.';
+                }
+
                 if (utente) {
                     currentUtenteId = utente.id;
                     localStorage.setItem('patientId', String(utente.id));
                     nameDisplay.textContent = `Nome: ${utente.nome}`;
                     idDisplay.textContent = `ID: ${utente.id}`;
-                    info.innerText = `Utente autenticado como ${utente.nome}`;
+                    if (info.innerText.includes('Só existe um utente')) {
+                        // mensagem já definida
+                    } else {
+                        info.innerText = `Utente autenticado como ${utente.nome}`;
+                    }
+                } else if (storedId && !Number.isNaN(Number(storedId))) {
+                    currentUtenteId = Number(storedId);
+                    localStorage.setItem('patientId', String(storedId));
+                    nameDisplay.textContent = storedName ? `Nome: ${storedName}` : 'Nome: desconhecido';
+                    idDisplay.textContent = `ID: ${storedId}`;
+                    info.innerText = 'Utente identificado a partir do ID na URL.';
+                } else if (Array.isArray(lista) && lista.length > 0) {
+                    currentUtenteId = lista[0].id;
+                    localStorage.setItem('patientId', String(lista[0].id));
+                    nameDisplay.textContent = `Nome: ${lista[0].nome}`;
+                    idDisplay.textContent = `ID: ${lista[0].id}`;
+                    info.innerText = '';
                 } else {
                     nameDisplay.textContent = storedName ? `Nome: ${storedName}` : 'Nome: desconhecido';
                     idDisplay.textContent = 'ID: não encontrado';

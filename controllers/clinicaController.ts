@@ -311,6 +311,10 @@ const clinicaController = {
         }
 
         const { utente_id, answers } = body;
+        const utenteId = utente_id || Number(req.params.id);
+        if (!utenteId || Number.isNaN(Number(utenteId))) {
+            return res.status(400).json({ error: 'ID do utente inválido ou ausente.' });
+        }
 
         // Processamento pelo Motor CARAT
         const resultado = caratEngine.computeCaratFromAnswers(answers);
@@ -321,7 +325,7 @@ const clinicaController = {
         `;
 
         db.run(queryAval, [
-            utente_id, 
+            utenteId,
             JSON.stringify(answers), 
             resultado.totalScore, 
             resultado.interpretation, 
@@ -337,7 +341,7 @@ const clinicaController = {
                     INSERT INTO alertas (utente_id, avaliacao_id, tipo, prioridade) 
                     VALUES (?, ?, ?, ?)
                 `;
-                db.run(queryAlerta, [utente_id, avaliacaoId, 'Controlo Insuficiente', 'Alta']);
+                db.run(queryAlerta, [utenteId, avaliacaoId, 'Controlo Insuficiente', 'Alta']);
             }
 
             res.status(201).json({ 
