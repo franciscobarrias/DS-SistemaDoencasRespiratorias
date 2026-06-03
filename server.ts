@@ -31,9 +31,17 @@ app.post('/utentes', clinicaController.addUtente);
 app.post('/sintomas', clinicaController.addSintoma);
 app.get('/sintomas', clinicaController.getAllSintomas); 
 app.get('/sintomas/:utente_id', clinicaController.getSintomas);
+app.get('/utentes', clinicaController.getAllUtentes);
+
+// 🏥 ROTAS DE MÉDICOS (com bypass de autenticação)
+app.get('/medicos', clinicaController.getAllMedicos);
+app.post('/medicos', clinicaController.addMedico);
+app.put('/medicos/:id', clinicaController.updateMedico);
+app.delete('/medicos/:id', clinicaController.deleteMedico);
 
 // 🛡️ A ROTA QUE FALTAVA: Liga o botão 🗑️ à base de dados!
 app.delete('/sintomas/:id', clinicaController.deleteSintoma);
+app.delete('/utentes/:id', clinicaController.deleteUtente);
 // ========================================================
 
 // Rotas de autenticação (login/logout) sem protecção

@@ -11,6 +11,14 @@ router.post('/utentes/import-fhir/:fhirId', clinicaController.importUtenteFromFh
 router.get('/utentes/:id/history', clinicaController.getHistoricoUtente); 
 
 // ==========================================
+// 🏥 ROTAS DE MÉDICOS
+// ==========================================
+router.get('/medicos', clinicaController.getAllMedicos);
+router.post('/medicos', clinicaController.addMedico);
+router.put('/medicos/:id', clinicaController.updateMedico);
+router.delete('/medicos/:id', clinicaController.deleteMedico); 
+
+// ==========================================
 // 🛡️ NOVAS ROTAS: Gestão de Terapêutica
 // ==========================================
 router.get('/utentes/:id/terapeutica', clinicaController.getTerapeutica); // Listar medicamentos do utente

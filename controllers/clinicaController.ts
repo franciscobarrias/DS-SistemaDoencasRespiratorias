@@ -255,13 +255,13 @@ const clinicaController = {
 
     // 🛡️ NOVA FUNÇÃO: Gravar novo utente na base de dados
     addUtente: (req, res) => {
-        const { nome, email, telefone } = req.body;
+        const { nome, email, telefone, medico_id } = req.body;
         
         // Validação básica
         if (!nome) return res.status(400).json({ error: "Nome é obrigatório." });
 
-        db.run("INSERT INTO utentes (nome, email, telefone) VALUES (?, ?, ?)",
-            [nome, email || '', telefone || ''], async function(err) {
+        db.run("INSERT INTO utentes (nome, email, telefone, medico_id) VALUES (?, ?, ?, ?)",
+            [nome, email || '', telefone || '', medico_id || null], async function(err) {
             if (err) return res.status(500).json({ error: err.message });
 
             const newId = this.lastID;
@@ -503,7 +503,7 @@ const clinicaController = {
             );
 
             return res.status(201).json({
-                id: result.lastID,
+                id: (result as any).lastID,
                 mensagem: 'Temperatura registada com sucesso'
             });
         } catch (err) {
@@ -706,6 +706,70 @@ const clinicaController = {
             console.error(`[Obs Webhook] Erro:`, err);
             return res.status(500).json({ error: String(err) });
         }
+    },
+
+    // ==========================================
+    // 🏥 CRUD de MÉDICOS
+    // ==========================================
+    
+    getAllMedicos: (req, res) => {
+        db.all("SELECT * FROM medicos ORDER BY nome", [], (err, rows) => {
+            if (err) return res.status(500).json({ error: err.message });
+            res.json(rows || []);
+        });
+    },
+
+    addMedico: (req, res) => {
+        const { nome, email, telefone, especialidade } = req.body;
+        
+        if (!nome) return res.status(400).json({ error: "Nome é obrigatório." });
+
+        db.run("INSERT INTO medicos (nome, email, especialidade) VALUES (?, ?, ?)",
+            [nome, email || '', especialidade || ''], function(err) {
+            if (err) return res.status(500).json({ error: err.message });
+            
+            const newId = this.lastID;
+            res.status(201).json({ 
+                id: newId, 
+                nome, 
+                email: email || '', 
+                telefone: telefone || '',
+                especialidade: especialidade || '',
+                mensagem: "Médico adicionado com sucesso" 
+            });
+        });
+    },
+
+    updateMedico: (req, res) => {
+        const { id } = req.params;
+        const { nome, email, telefone, especialidade } = req.body;
+        
+        if (!nome) return res.status(400).json({ error: "Nome é obrigatório." });
+
+        db.run("UPDATE medicos SET nome = ?, email = ?, especialidade = ? WHERE id = ?",
+            [nome, email || '', especialidade || '', id], function(err) {
+            if (err) return res.status(500).json({ error: err.message });
+            
+            if (this.changes === 0) {
+                return res.status(404).json({ error: "Médico não encontrado." });
+            }
+            
+            res.json({ id, nome, email: email || '', telefone: telefone || '', especialidade: especialidade || '', mensagem: "Médico atualizado com sucesso" });
+        });
+    },
+
+    deleteMedico: (req, res) => {
+        const { id } = req.params;
+        
+        db.run("DELETE FROM medicos WHERE id = ?", [id], function(err) {
+            if (err) return res.status(500).json({ error: err.message });
+            
+            if (this.changes === 0) {
+                return res.status(404).json({ error: "Médico não encontrado." });
+            }
+            
+            res.json({ mensagem: "Médico eliminado com sucesso" });
+        });
     }
 };
 

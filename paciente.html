@@ -163,6 +163,67 @@
         .logout-btn:hover {
             background: var(--danger);
         }
+
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(15, 23, 42, 0.65);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            z-index: 50;
+        }
+
+        .modal-card {
+            background: var(--card-bg);
+            border-radius: 18px;
+            width: min(560px, 100%);
+            padding: 24px;
+            box-shadow: 0 20px 60px rgba(15, 23, 42, 0.18);
+            position: relative;
+        }
+
+        .modal-card h3 {
+            margin-top: 0;
+            color: var(--primary);
+        }
+
+        .modal-close {
+            position: absolute;
+            top: 16px;
+            right: 16px;
+            background: transparent;
+            border: none;
+            color: var(--text);
+            font-size: 24px;
+            cursor: pointer;
+        }
+
+        .perfil-info {
+            display: grid;
+            gap: 16px;
+            margin-top: 16px;
+        }
+
+        .perfil-info div {
+            background: rgba(59, 130, 246, 0.05);
+            border: 1px solid #e5e7eb;
+            border-radius: 12px;
+            padding: 14px;
+        }
+
+        .perfil-label {
+            display: block;
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-bottom: 4px;
+        }
+
+        .perfil-value {
+            color: var(--text);
+            font-weight: 600;
+        }
     </style>
 </head>
 <body>
@@ -185,7 +246,7 @@
         </div>
 
         <div class="action-buttons">
-            <a href="questionario.html" class="action-card" style="text-decoration: none;">
+            <a id="link-questionario" href="questionario.html" class="action-card" style="text-decoration: none;">
                 <div class="action-icon">📋</div>
                 <div class="action-title">Responder Avaliação CARAT</div>
                 <div class="action-desc">Responda ao questionário de avaliação</div>
@@ -262,6 +323,27 @@
         </div>
     </div>
 
+    <div id="profileModal" class="modal-overlay" onclick="if (event.target === this) closeProfileModal()">
+        <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="perfilTitulo">
+            <button class="modal-close" onclick="closeProfileModal()" aria-label="Fechar perfil">×</button>
+            <h3 id="perfilTitulo">Perfil do Paciente</h3>
+            <div class="perfil-info">
+                <div>
+                    <span class="perfil-label">Nome</span>
+                    <span class="perfil-value" id="profile-name">Doente</span>
+                </div>
+                <div>
+                    <span class="perfil-label">Email</span>
+                    <span class="perfil-value" id="profile-email">Não disponível</span>
+                </div>
+                <div>
+                    <span class="perfil-label">Telefone</span>
+                    <span class="perfil-value" id="profile-phone">Não disponível</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script>
         // Tema
         function toggleTheme() {
@@ -314,13 +396,68 @@
         }
 
         function viewProfile() {
-            alert('Funcionalidade de perfil em desenvolvimento');
+            openProfileModal();
+        }
+
+        function openProfileModal() {
+            const name = localStorage.getItem('patientName') || 'Maria Silva';
+            const email = localStorage.getItem('patientEmail') || 'maria.silva@gmail.com';
+            const phone = localStorage.getItem('patientPhone') || '912 345 678';
+
+            document.getElementById('profile-name').textContent = name;
+            document.getElementById('profile-email').textContent = email;
+            document.getElementById('profile-phone').textContent = phone;
+            document.getElementById('profileModal').style.display = 'flex';
+        }
+
+        function closeProfileModal() {
+            document.getElementById('profileModal').style.display = 'none';
         }
 
         // Carregar nome do doente
         function loadPatientInfo() {
             const patientName = localStorage.getItem('patientName') || 'Doente';
             document.getElementById('patient-name').textContent = patientName;
+            ensurePatientId();
+        }
+
+        async function ensurePatientId() {
+            const existingId = localStorage.getItem('patientId');
+            if (existingId) {
+                updateQuestionarioLink(existingId);
+                return;
+            }
+
+            const storedName = localStorage.getItem('patientName');
+            const storedEmail = localStorage.getItem('patientEmail');
+            const storedPhone = localStorage.getItem('patientPhone');
+            if (!storedName && !storedEmail && !storedPhone) return;
+
+            try {
+                const res = await fetch('http://localhost:3000/utentes');
+                if (!res.ok) return;
+                const lista = await res.json();
+                const utente = Array.isArray(lista)
+                    ? lista.find(u =>
+                        (storedEmail && u.email === storedEmail) ||
+                        (storedPhone && u.telefone === storedPhone) ||
+                        (storedName && u.nome === storedName)
+                    )
+                    : null;
+
+                if (utente && utente.id) {
+                    localStorage.setItem('patientId', String(utente.id));
+                    updateQuestionarioLink(utente.id);
+                }
+            } catch (err) {
+                console.warn('Não foi possível resolver o ID do paciente autenticado:', err);
+            }
+        }
+
+        function updateQuestionarioLink(patientId) {
+            const link = document.getElementById('link-questionario');
+            if (!link || !patientId) return;
+            link.href = `questionario.html?patientId=${encodeURIComponent(patientId)}`;
         }
 
         // Carregar avaliações recentes

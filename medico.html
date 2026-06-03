@@ -344,7 +344,9 @@
 
                 <div class="modal-subcard modal-col-full">
 
-                    <h3 style="color: var(--primary); margin-bottom: 10px; font-size: 15px;">📊 Observações FHIR (Medicamentos, Pressão...)</h3>
+                    <h3 style="color: var(--primary); margin-bottom: 10px; font-size: 15px; display:flex; justify-content: space-between; align-items: center; gap: 10px;">📊 Observações FHIR (Medicamentos, Pressão...)
+                        <button class="btn-green" onclick="sincronizarObservacoesFhir(utenteFichaAtualId)" style="font-size:12px; padding:6px 10px; border:none; border-radius:6px; cursor:pointer;">🔄 Sincronizar FHIR</button>
+                    </h3>
 
                     <ul id="prof-lista-observacoes-fhir" style="list-style: none; padding: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 10px;"></ul>
 

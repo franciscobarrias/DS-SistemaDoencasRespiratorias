@@ -148,10 +148,13 @@
             <div class="info-card">
                 <div>
                     <strong style="display:block; font-size: 14px; color: var(--text-muted);">Identificação</strong>
-                    <label for="utente_id" style="font-size: 18px; color: var(--primary); font-weight: 600;">ID do Utente:</label>
+                    <span style="font-size: 18px; color: var(--primary); font-weight: 600;">Paciente autenticado</span>
                 </div>
-                <input type="number" id="utente_id" placeholder="Ex: 2" min="1" required>
-                <small id="utentes-info" style="display:block; color:var(--text-muted); margin-left:10px; font-size:13px;">Carregando número de utentes...</small>
+                <div id="patient-identification" style="display:grid; gap:4px; font-size: 14px; color: var(--text-main); margin-top: 10px;">
+                    <span id="patient-name-display">Nome: a carregar...</span>
+                    <span id="patient-id-display">ID: a carregar...</span>
+                </div>
+                <small id="utentes-info" style="display:block; color:var(--text-muted); margin-left:10px; font-size:13px;">A carregar os dados do utente...</small>
             </div>
 
             <div class="section-title">Durante as últimas 4 semanas, por causa da sua asma/rinite/alergia quantas vezes, em média, teve:</div>
@@ -170,7 +173,7 @@
                 </div>
             </div>
 
-        <div id="erro-geral" class="error-text">⚠️ Por favor, responde a todas as perguntas destacadas a vermelho e preenche o ID.</div>
+        <div id="erro-geral" class="error-text">⚠️ Por favor, responde a todas as perguntas destacadas a vermelho.</div>
 
         <button type="button" class="btn-submit" id="btn-enviar" onclick="submeterQuestionario(event)">🚀 Submeter Avaliação Clínica</button>
         
@@ -179,6 +182,7 @@
 
     <script>
         const API_URL = 'http://localhost:3000';
+        let currentUtenteId = null;
 
         // Theme handling (shared with dashboard)
         function toggleTheme() {
@@ -196,26 +200,48 @@
             }
         }
 
-        // Load number of utentes to set ID range
-        async function carregarUtentesCount() {
+        async function carregarUtenteAutenticado() {
             const info = document.getElementById('utentes-info');
-            const input = document.getElementById('utente_id');
-            if (!info || !input) return;
+            const nameDisplay = document.getElementById('patient-name-display');
+            const idDisplay = document.getElementById('patient-id-display');
+            const storedId = localStorage.getItem('patientId') || new URLSearchParams(window.location.search).get('patientId');
+            const storedName = localStorage.getItem('patientName');
+            const storedEmail = localStorage.getItem('patientEmail');
+            const storedPhone = localStorage.getItem('patientPhone');
+
+            if (!info || !nameDisplay || !idDisplay) return;
+            info.innerText = 'A carregar os dados do utente...';
+
             try {
                 const res = await fetch(`${API_URL}/utentes`);
                 if (!res.ok) throw new Error('Falha ao obter utentes');
-                const dados = await res.json();
-                const total = Array.isArray(dados) ? dados.length : 0;
-                if (total === 0) {
-                    info.innerText = 'Não existem utentes. Registe utentes no dashboard.';
-                    input.max = '1';
+                const lista = await res.json();
+
+                const utente = Array.isArray(lista)
+                    ? lista.find(u =>
+                        (storedId && String(u.id) === storedId) ||
+                        (storedEmail && u.email === storedEmail) ||
+                        (storedPhone && u.telefone === storedPhone) ||
+                        (storedName && u.nome === storedName)
+                    )
+                    : null;
+
+                if (utente) {
+                    currentUtenteId = utente.id;
+                    localStorage.setItem('patientId', String(utente.id));
+                    nameDisplay.textContent = `Nome: ${utente.nome}`;
+                    idDisplay.textContent = `ID: ${utente.id}`;
+                    info.innerText = `Utente autenticado como ${utente.nome}`;
                 } else {
-                    info.innerText = `Total de utentes: ${total} — ID válido: 1 a ${total}`;
-                    input.max = String(total);
+                    nameDisplay.textContent = storedName ? `Nome: ${storedName}` : 'Nome: desconhecido';
+                    idDisplay.textContent = 'ID: não encontrado';
+                    info.innerText = 'Utente não encontrado. Reautentique ou contacte o suporte.';
                 }
             } catch (err) {
                 console.error('Erro ao obter utentes:', err);
                 info.innerText = 'Erro ao obter utentes (verifica o backend).';
+                nameDisplay.textContent = storedName ? `Nome: ${storedName}` : 'Nome: desconhecido';
+                idDisplay.textContent = 'ID: erro';
             }
         }
 
@@ -247,7 +273,6 @@
         // 🛡️ Função para limpar e reiniciar o questionário
         function limparFormulario() {
             document.querySelectorAll('input[type="radio"]').forEach(radio => radio.checked = false);
-            document.getElementById('utente_id').value = '';
             document.getElementById('resultado').style.display = 'none';
             document.getElementById('btn-enviar').style.display = 'block';
             window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -257,8 +282,6 @@
         function submeterQuestionario(event) {
             if (event) event.preventDefault(); // Bloqueia o recarregamento automático da página
 
-            const utenteInput = document.getElementById('utente_id');
-            const utente_id = utenteInput.value;
             const erroGeral = document.getElementById('erro-geral');
             const btnEnviar = document.getElementById('btn-enviar');
             
@@ -266,16 +289,12 @@
             let primeiroErroElemento = null;
             const respostas = [];
 
-            // Validar ID
-            if (!utente_id) {
-                utenteInput.style.borderColor = 'var(--danger)';
-                temErro = true;
-                primeiroErroElemento = utenteInput;
-            } else {
-                utenteInput.style.borderColor = '#d1d5db';
+            if (!currentUtenteId) {
+                erroGeral.innerText = '⚠️ Não foi possível identificar o paciente autenticado. Reautentique ou contacte o suporte.';
+                erroGeral.style.display = 'block';
+                return;
             }
 
-  
             for (let i = 1; i <= 10; i++) {
                 const card = document.getElementById(`q${i}-card`);
                 const resposta = document.querySelector(`input[name="p${i}"]:checked`);
@@ -290,8 +309,8 @@
                 }
             }
 
-         
             if (temErro) {
+                erroGeral.innerText = '⚠️ Por favor, responde a todas as perguntas destacadas a vermelho.';
                 erroGeral.style.display = 'block';
                 primeiroErroElemento.scrollIntoView({ behavior: 'smooth', block: 'center' });
                 return;
@@ -303,12 +322,12 @@
             btnEnviar.disabled = true;
 
             const payload = { 
-                utente_id: parseInt(utente_id), 
+                utente_id: parseInt(currentUtenteId), 
                 answers: respostas 
             };
 
             // 🛡️ CORRIGIDO: A Rota exata que definimos no backend!
-            fetch(`${API_URL}/utentes/${utente_id}/carat`, {
+            fetch(`${API_URL}/utentes/${currentUtenteId}/carat`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)
@@ -368,18 +387,7 @@
         }
         // Inicializações
         initTheme();
-        carregarUtentesCount();
-
-        // Garante que o ID está dentro do intervalo quando o utilizador altera o valor
-        document.getElementById('utente_id').addEventListener('input', (e) => {
-            const el = e.target;
-            if (!el) return;
-            const min = parseInt(el.min || '1', 10);
-            const max = parseInt(el.max || '1', 10);
-            let val = parseInt(el.value || '0', 10);
-            if (val < min) el.value = String(min);
-            if (val > max) el.value = String(max);
-        });
+        carregarUtenteAutenticado();
 
     </script>
 </body>

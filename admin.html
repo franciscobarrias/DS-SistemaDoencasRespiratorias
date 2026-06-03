@@ -419,7 +419,7 @@
                             <tr>
                                 <th>Nome</th>
                                 <th>Email</th>
-                                <th>Data Nascimento</th>
+                                <th>Telefone</th>
                                 <th>Médico Responsável</th>
                                 <th>Status</th>
                                 <th>Ações</th>
@@ -440,13 +440,13 @@
                 <p style="color: var(--text-muted);">Funcionalidade em desenvolvimento...</p>
                 
                 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 16px; margin-top: 20px;">
-                    <button class="btn-blue" style="padding: 12px; border: none; border-radius: 6px; cursor: pointer;">
+                    <button class="btn-blue" onclick="exportarMedicos()" style="padding: 12px; border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">
                         📥 Exportar Relatório de Médicos
                     </button>
-                    <button class="btn-green" style="padding: 12px; border: none; border-radius: 6px; cursor: pointer;">
+                    <button class="btn-green" onclick="exportarDoentes()" style="padding: 12px; border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">
                         📥 Exportar Relatório de Doentes
                     </button>
-                    <button class="btn-orange" style="padding: 12px; border: none; border-radius: 6px; cursor: pointer;">
+                    <button class="btn-orange" onclick="gerarRelatoriAtividades()" style="padding: 12px; border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">
                         📊 Gerar Relatório de Atividades
                     </button>
                 </div>
@@ -498,7 +498,118 @@
             }
         }
 
-        // Funções para Médicos
+        // Funções de dados - carregados do servidor
+        let medicosData = [];
+        let doentesData = [];
+        let nextDoenteId = 1;
+
+        // ==========================================
+        // 🔄 Carregar dados do servidor
+        // ==========================================
+        async function carregarMedicos() {
+            try {
+                const response = await fetch('/medicos');
+                if (!response.ok) throw new Error('Erro ao carregar médicos');
+                medicosData = await response.json();
+                renderMedicosTable(document.getElementById('search-medicos')?.value.trim().toLowerCase() || '');
+                carregarDropdownMedicos(); // Atualizar dropdown após carregar
+            } catch (err) {
+                console.error('Erro ao carregar médicos:', err);
+                alert('Erro ao carregar lista de médicos');
+            }
+        }
+
+        async function carregarDoentes() {
+            try {
+                const response = await fetch('/utentes');
+                if (!response.ok) throw new Error('Erro ao carregar doentes');
+                const allUtentes = await response.json();
+                
+                // Mapear utentes para o formato esperado
+                doentesData = allUtentes.map(u => ({
+                    id: u.id,
+                    nome: u.nome,
+                    email: u.email || '-',
+                    telefone: u.telefone || '-',
+                    medicoNome: (medicosData.find(m => Number(m.id) === Number(u.medico_id)) || {}).nome || (u.medico_id ? `ID ${u.medico_id}` : '-'),
+                    medicoId: u.medico_id,
+                    status: 'Ativo'
+                }));
+                
+                renderDoentesTable(document.getElementById('search-doentes')?.value.trim().toLowerCase() || '');
+            } catch (err) {
+                console.error('Erro ao carregar doentes:', err);
+                alert('Erro ao carregar lista de doentes');
+            }
+        }
+
+        function renderMedicosTable(filter = '') {
+            const tbody = document.getElementById('medicos-table-body');
+            if (!tbody) return;
+
+            const rows = medicosData
+                .filter(m => !filter || m.nome.toLowerCase().includes(filter) || m.email.toLowerCase().includes(filter))
+                .map(m => `
+                    <tr>
+                        <td>${m.nome}</td>
+                        <td>${m.email}</td>
+                        <td>${m.especialidade}</td>
+                        <td>${m.telefone || '-'}</td>
+                        <td>${m.status}</td>
+                        <td class="action-buttons">
+                            <button class="action-btn btn-edit" onclick="alert('Editar não implementado ainda')">Editar</button>
+                            <button class="action-btn btn-delete" onclick="removerMedico(${m.id})">Eliminar</button>
+                        </td>
+                    </tr>
+                `);
+
+            tbody.innerHTML = rows.length ? rows.join('') : '<tr><td colspan="6" style="text-align: center; color: var(--text-muted);">Nenhum médico registado</td></tr>';
+            atualizarEstatisticas();
+        }
+
+        function renderDoentesTable(filter = '') {
+            const tbody = document.getElementById('doentes-table-body');
+            if (!tbody) return;
+
+            const rows = doentesData
+                .filter(d => !filter || d.nome.toLowerCase().includes(filter) || d.email.toLowerCase().includes(filter) || d.telefone.toLowerCase().includes(filter))
+                .map(d => `
+                    <tr>
+                        <td>${d.nome}</td>
+                        <td>${d.email}</td>
+                        <td>${d.telefone}</td>
+                        <td>${d.medicoNome}</td>
+                        <td>${d.status}</td>
+                        <td class="action-buttons">
+                            <button class="action-btn btn-edit" onclick="alert('Editar não implementado ainda')">Editar</button>
+                            <button class="action-btn btn-delete" onclick="removerDoente(${d.id})">Eliminar</button>
+                        </td>
+                    </tr>
+                `);
+
+            tbody.innerHTML = rows.length ? rows.join('') : '<tr><td colspan="6" style="text-align: center; color: var(--text-muted);">Nenhum doente registado</td></tr>';
+            atualizarEstatisticas();
+        }
+
+        function atualizarEstatisticas() {
+            document.getElementById('stat-medicos').textContent = String(medicosData.length);
+            document.getElementById('stat-doentes').textContent = String(doentesData.length);
+            document.getElementById('stat-medicos-ativos').textContent = String(medicosData.filter(m => m.status === 'Ativo').length);
+            document.getElementById('stat-doentes-ativos').textContent = String(doentesData.filter(d => d.status === 'Ativo').length);
+        }
+
+        function carregarDropdownMedicos() {
+            const medicosSelect = document.getElementById('doe-medico');
+            if (!medicosSelect) return;
+            medicosSelect.innerHTML = '<option value="">Selecione um médico...</option>';
+            medicosData.forEach(medico => {
+                const option = document.createElement('option');
+                option.value = medico.id;
+                option.textContent = medico.nome;
+                medicosSelect.appendChild(option);
+            });
+        }
+
         function registarMedico() {
             const nome = document.getElementById('med-nome').value;
             const email = document.getElementById('med-email').value;
@@ -512,10 +623,26 @@
                 return;
             }
 
-            // Aqui enviar para backend
-            console.log('Registando médico:', { nome, email, especialidade, licenca });
-            showAlert('alert-medico', `Médico ${nome} registado com sucesso!`, 'success');
-            limparFormularioMedico();
+            // Enviar para o servidor
+            fetch('/medicos', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ nome, email, telefone, especialidade })
+            })
+            .then(response => {
+                if (!response.ok) throw new Error('Erro ao registar médico');
+                return response.json();
+            })
+            .then(data => {
+                showAlert('alert-medico', `Médico ${nome} registado com sucesso!`, 'success');
+                limparFormularioMedico();
+                carregarMedicos(); // Recarregar lista
+                carregarDropdownMedicos(); // Atualizar dropdown
+            })
+            .catch(err => {
+                console.error('Erro:', err);
+                showAlert('alert-medico', 'Erro ao registar médico: ' + err.message, 'error');
+            });
         }
 
         function limparFormularioMedico() {
@@ -527,23 +654,43 @@
             document.getElementById('med-password').value = '';
         }
 
-        // Funções para Doentes
         function registarDoente() {
             const nome = document.getElementById('doe-nome').value;
             const email = document.getElementById('doe-email').value;
             const nascimento = document.getElementById('doe-nascimento').value;
-            const medico = document.getElementById('doe-medico').value;
+            const telefone = document.getElementById('doe-telefone').value;
+            const medicoId = document.getElementById('doe-medico').value;
             const password = document.getElementById('doe-password').value;
 
-            if (!nome || !email || !nascimento || !medico || !password) {
+            if (!nome || !email || !nascimento || !medicoId || !password) {
                 showAlert('alert-doente', 'Por favor, preencha todos os campos obrigatórios.', 'error');
                 return;
             }
 
-            // Aqui enviar para backend
-            console.log('Registando doente:', { nome, email, nascimento, medico });
-            showAlert('alert-doente', `Doente ${nome} registado com sucesso!`, 'success');
-            limparFormularioDoente();
+            // Enviar para o servidor
+            fetch('/utentes', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                    nome, 
+                    email, 
+                    telefone,
+                    medico_id: Number(medicoId)
+                })
+            })
+            .then(response => {
+                if (!response.ok) throw new Error('Erro ao registar doente');
+                return response.json();
+            })
+            .then(data => {
+                showAlert('alert-doente', `Doente ${nome} registado com sucesso!`, 'success');
+                limparFormularioDoente();
+                carregarDoentes(); // Recarregar lista
+            })
+            .catch(err => {
+                console.error('Erro:', err);
+                showAlert('alert-doente', 'Erro ao registar doente: ' + err.message, 'error');
+            });
         }
 
         function limparFormularioDoente() {
@@ -554,6 +701,128 @@
             document.getElementById('doe-identidade').value = '';
             document.getElementById('doe-medico').value = '';
             document.getElementById('doe-password').value = '';
+        }
+
+        function removerMedico(id) {
+            if (!confirm('Tem a certeza que deseja eliminar este médico?')) return;
+
+            fetch(`/medicos/${id}`, { method: 'DELETE' })
+                .then(response => {
+                    if (!response.ok) throw new Error('Erro ao eliminar médico');
+                    return response.json();
+                })
+                .then(data => {
+                    showAlert('alert-medico', 'Médico eliminado com sucesso!', 'success');
+                    carregarMedicos(); // Recarregar lista
+                    carregarDropdownMedicos(); // Atualizar dropdown
+                })
+                .catch(err => {
+                    console.error('Erro:', err);
+                    showAlert('alert-medico', 'Erro ao eliminar médico: ' + err.message, 'error');
+                });
+        }
+
+        function removerDoente(id) {
+            if (!confirm('Tem a certeza que deseja eliminar este doente?')) return;
+
+            fetch(`/utentes/${id}`, { method: 'DELETE' })
+                .then(response => {
+                    if (!response.ok) throw new Error('Erro ao eliminar doente');
+                    return response.json();
+                })
+                .then(data => {
+                    showAlert('alert-doente', 'Doente eliminado com sucesso!', 'success');
+                    carregarDoentes(); // Recarregar lista
+                })
+                .catch(err => {
+                    console.error('Erro:', err);
+                    showAlert('alert-doente', 'Erro ao eliminar doente: ' + err.message, 'error');
+                });
+        }
+
+        // Funções de Exportação
+        function downloadCSV(filename, content) {
+            const element = document.createElement('a');
+            element.setAttribute('href', 'data:text/csv;charset=utf-8,' + encodeURIComponent(content));
+            element.setAttribute('download', filename);
+            element.style.display = 'none';
+            document.body.appendChild(element);
+            element.click();
+            document.body.removeChild(element);
+        }
+
+        function exportarMedicos() {
+            if (medicosData.length === 0) {
+                alert('Não há médicos para exportar.');
+                return;
+            }
+
+            let csv = 'ID,Nome,Email,Telefone,Especialidade,Status,Data Exportação\n';
+            const dataAtual = new Date().toLocaleString('pt-PT');
+            
+            medicosData.forEach(m => {
+                csv += `${m.id},"${m.nome}","${m.email}","${m.telefone || '-'}","${m.especialidade}",${m.status},"${dataAtual}"\n`;
+            });
+
+            const filename = `relatorio_medicos_${new Date().toISOString().split('T')[0]}.csv`;
+            downloadCSV(filename, csv);
+            alert('Relatório de médicos exportado com sucesso!');
+        }
+
+        function exportarDoentes() {
+            if (doentesData.length === 0) {
+                alert('Não há doentes para exportar.');
+                return;
+            }
+
+            let csv = 'ID,Nome,Email,Telefone,Médico Responsável,Status,Data Exportação\n';
+            const dataAtual = new Date().toLocaleString('pt-PT');
+            
+            doentesData.forEach(d => {
+                csv += `${d.id},"${d.nome}","${d.email}","${d.telefone}","${d.medicoNome}",${d.status},"${dataAtual}"\n`;
+            });
+
+            const filename = `relatorio_doentes_${new Date().toISOString().split('T')[0]}.csv`;
+            downloadCSV(filename, csv);
+            alert('Relatório de doentes exportado com sucesso!');
+        }
+
+        function gerarRelatoriAtividades() {
+            const data = new Date();
+            const timestamp = data.toLocaleString('pt-PT');
+            const dataSimples = data.toISOString().split('T')[0];
+
+            let csv = 'RELATÓRIO DE ATIVIDADES DO SISTEMA SaudINOB\n';
+            csv += `Data de Geração: ${timestamp}\n\n`;
+            
+            csv += '=== RESUMO ESTATÍSTICO ===\n';
+            csv += `Total de Médicos: ${medicosData.length}\n`;
+            csv += `Médicos Ativos: ${medicosData.filter(m => m.status === 'Ativo').length}\n`;
+            csv += `Total de Doentes: ${doentesData.length}\n`;
+            csv += `Doentes Ativos: ${doentesData.filter(d => d.status === 'Ativo').length}\n\n`;
+
+            csv += '=== LISTAGEM DE MÉDICOS ===\n';
+            csv += 'ID,Nome,Email,Especialidade,Status\n';
+            medicosData.forEach(m => {
+                csv += `${m.id},"${m.nome}","${m.email}","${m.especialidade}",${m.status}\n`;
+            });
+
+            csv += '\n=== LISTAGEM DE DOENTES ===\n';
+            csv += 'ID,Nome,Email,Telefone,Médico Responsável,Status\n';
+            doentesData.forEach(d => {
+                csv += `${d.id},"${d.nome}","${d.email}","${d.telefone}","${d.medicoNome}",${d.status}\n`;
+            });
+
+            csv += '\n=== DISTRIBUIÇÃO POR MÉDICO ===\n';
+            csv += 'Médico,Número de Doentes\n';
+            medicosData.forEach(m => {
+                const count = doentesData.filter(d => d.medicoId === m.id).length;
+                csv += `"${m.nome}",${count}\n`;
+            });
+
+            const filename = `atividades_sistema_${dataSimples}.csv`;
+            downloadCSV(filename, csv);
+            alert('Relatório de atividades exportado com sucesso!');
         }
 
         // Funções auxiliares
@@ -569,28 +838,26 @@
         }
 
         // Inicializar
-        function init() {
-            // Carregar estatísticas
-            document.getElementById('stat-medicos').textContent = '5';
-            document.getElementById('stat-doentes').textContent = '23';
-            document.getElementById('stat-medicos-ativos').textContent = '4';
-            document.getElementById('stat-doentes-ativos').textContent = '18';
+        async function init() {
+            // Carregar dados do servidor na ordem correta para ter nomes de médicos nos doentes
+            await carregarMedicos();
+            await carregarDoentes();
 
-            // Carregar dropdown de médicos
-            const medicosSelect = document.getElementById('doe-medico');
-            // Dados de exemplo
-            const medicos = [
-                { id: 1, nome: 'Dr. João Silva' },
-                { id: 2, nome: 'Dra. Maria Santos' },
-                { id: 3, nome: 'Dr. Pedro Costa' }
-            ];
-            
-            medicos.forEach(medico => {
-                const option = document.createElement('option');
-                option.value = medico.id;
-                option.textContent = medico.nome;
-                medicosSelect.appendChild(option);
-            });
+            const searchMedicosInput = document.getElementById('search-medicos');
+            if (searchMedicosInput) {
+                searchMedicosInput.addEventListener('input', event => {
+                    const value = event.target.value.trim().toLowerCase();
+                    renderMedicosTable(value);
+                });
+            }
+
+            const searchDoentesInput = document.getElementById('search-doentes');
+            if (searchDoentesInput) {
+                searchDoentesInput.addEventListener('input', event => {
+                    const value = event.target.value.trim().toLowerCase();
+                    renderDoentesTable(value);
+                });
+            }
         }
 
         // Inicializar ao carregar a página
