@@ -464,11 +464,13 @@
         function loadAssessments() {
             // Aqui carregar do backend
             const assessmentsList = document.getElementById('assessments-list');
+            const patientName = localStorage.getItem('patientName') || 'Doente';
             // Exemplo de dados
             assessmentsList.innerHTML = `
                 <div class="assessment-item">
                     <div>
                         <div style="font-weight: 600;">Avaliação CARAT</div>
+                        <div class="assessment-date">Utente: <strong>${escaparHTML(patientName)}</strong></div>
                         <div class="assessment-date">2 de junho de 2026 às 14:30</div>
                     </div>
                     <div class="assessment-score">Score: 15</div>
@@ -476,6 +478,7 @@
                 <div class="assessment-item">
                     <div>
                         <div style="font-weight: 600;">Avaliação CARAT</div>
+                        <div class="assessment-date">Utente: <strong>${escaparHTML(patientName)}</strong></div>
                         <div class="assessment-date">1 de junho de 2026 às 10:15</div>
                     </div>
                     <div class="assessment-score">Score: 18</div>

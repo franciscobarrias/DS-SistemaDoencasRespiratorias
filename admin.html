@@ -252,6 +252,138 @@
             color: #991b1b;
             display: block;
         }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.4);
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .modal.active {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-content {
+            background: var(--card-bg);
+            padding: 32px;
+            border-radius: 12px;
+            max-width: 600px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+            animation: slideUp 0.3s ease;
+        }
+
+        @keyframes slideUp {
+            from { transform: translateY(20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+        }
+
+        .modal-header h2 {
+            margin: 0;
+            color: var(--primary);
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 28px;
+            cursor: pointer;
+            color: var(--text-muted);
+            transition: color 0.2s ease;
+        }
+
+        .modal-close:hover {
+            color: var(--text);
+        }
+
+        .modal-form {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 16px;
+        }
+
+        .modal-form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .modal-form-group label {
+            font-weight: 600;
+            color: var(--text);
+            font-size: 14px;
+        }
+
+        .modal-form-group input,
+        .modal-form-group select {
+            padding: 10px;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+
+        .modal-form-group input:focus,
+        .modal-form-group select:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+
+        .modal-footer {
+            display: flex;
+            gap: 12px;
+            margin-top: 24px;
+        }
+
+        .modal-footer button {
+            flex: 1;
+            padding: 10px;
+            border: none;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .btn-save {
+            background: var(--primary);
+            color: white;
+        }
+
+        .btn-save:hover {
+            background: #2563eb;
+        }
+
+        .btn-cancel {
+            background: #e5e7eb;
+            color: var(--text);
+        }
+
+        .btn-cancel:hover {
+            background: #d1d5db;
+        }
     </style>
 </head>
 <body>
@@ -454,6 +586,80 @@
         </div>
     </div>
 
+    <!-- Modal de Editar Médico -->
+    <div id="editarMedicoModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Editar Médico</h2>
+                <button class="modal-close" onclick="fecharModalEditarMedico()">×</button>
+            </div>
+            <div class="modal-form">
+                <input type="hidden" id="editar-medico-id">
+                <div class="modal-form-group">
+                    <label>Nome Completo *</label>
+                    <input type="text" id="editar-med-nome" required>
+                </div>
+                <div class="modal-form-group">
+                    <label>Email *</label>
+                    <input type="email" id="editar-med-email" required>
+                </div>
+                <div class="modal-form-group">
+                    <label>Telefone</label>
+                    <input type="tel" id="editar-med-telefone">
+                </div>
+                <div class="modal-form-group">
+                    <label>Especialidade *</label>
+                    <select id="editar-med-especialidade" required>
+                        <option value="">Selecione uma especialidade...</option>
+                        <option value="Pneumologia">Pneumologia</option>
+                        <option value="Medicina Geral">Medicina Geral</option>
+                        <option value="Alergologia">Alergologia</option>
+                        <option value="Imunologia">Imunologia</option>
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-save" onclick="atualizarMedico()">💾 Guardar Alterações</button>
+                <button class="btn-cancel" onclick="fecharModalEditarMedico()">Cancelar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Editar Doente -->
+    <div id="editarDoenteModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Editar Doente</h2>
+                <button class="modal-close" onclick="fecharModalEditarDoente()">×</button>
+            </div>
+            <div class="modal-form">
+                <input type="hidden" id="editar-doente-id">
+                <div class="modal-form-group">
+                    <label>Nome Completo *</label>
+                    <input type="text" id="editar-doe-nome" required>
+                </div>
+                <div class="modal-form-group">
+                    <label>Email *</label>
+                    <input type="email" id="editar-doe-email" required>
+                </div>
+                <div class="modal-form-group">
+                    <label>Telefone</label>
+                    <input type="tel" id="editar-doe-telefone">
+                </div>
+                <div class="modal-form-group">
+                    <label>Médico Responsável *</label>
+                    <select id="editar-doe-medico" required>
+                        <option value="">Selecione um médico...</option>
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-save" onclick="atualizarDoente()">💾 Guardar Alterações</button>
+                <button class="btn-cancel" onclick="fecharModalEditarDoente()">Cancelar</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         // Tema
         function toggleTheme() {
@@ -557,7 +763,7 @@
                         <td>${m.telefone || '-'}</td>
                         <td>${m.status}</td>
                         <td class="action-buttons">
-                            <button class="action-btn btn-edit" onclick="alert('Editar não implementado ainda')">Editar</button>
+                            <button class="action-btn btn-edit" onclick="editarMedico(${m.id})">Editar</button>
                             <button class="action-btn btn-delete" onclick="removerMedico(${m.id})">Eliminar</button>
                         </td>
                     </tr>
@@ -581,7 +787,7 @@
                         <td>${d.medicoNome}</td>
                         <td>${d.status}</td>
                         <td class="action-buttons">
-                            <button class="action-btn btn-edit" onclick="alert('Editar não implementado ainda')">Editar</button>
+                            <button class="action-btn btn-edit" onclick="editarDoente(${d.id})">Editar</button>
                             <button class="action-btn btn-delete" onclick="removerDoente(${d.id})">Eliminar</button>
                         </td>
                     </tr>
@@ -837,7 +1043,160 @@
             }, 5000);
         }
 
-        // Inicializar
+        // ==========================================
+        // 📝 Funções de Edição de Médicos
+        // ==========================================
+        function editarMedico(id) {
+            const medico = medicosData.find(m => m.id === id);
+            if (!medico) {
+                alert('Médico não encontrado');
+                return;
+            }
+
+            // Preencher modal com dados do médico
+            document.getElementById('editar-medico-id').value = medico.id;
+            document.getElementById('editar-med-nome').value = medico.nome;
+            document.getElementById('editar-med-email').value = medico.email;
+            document.getElementById('editar-med-telefone').value = medico.telefone || '';
+            document.getElementById('editar-med-especialidade').value = medico.especialidade;
+
+            // Abrir modal
+            document.getElementById('editarMedicoModal').classList.add('active');
+        }
+
+        function fecharModalEditarMedico() {
+            document.getElementById('editarMedicoModal').classList.remove('active');
+        }
+
+        function atualizarMedico() {
+            const id = document.getElementById('editar-medico-id').value;
+            const nome = document.getElementById('editar-med-nome').value;
+            const email = document.getElementById('editar-med-email').value;
+            const telefone = document.getElementById('editar-med-telefone').value;
+            const especialidade = document.getElementById('editar-med-especialidade').value;
+
+            if (!nome || !email || !especialidade) {
+                showAlert('alert-medico', 'Por favor, preencha todos os campos obrigatórios.', 'error');
+                return;
+            }
+
+            // Enviar para o servidor
+            fetch(`/medicos/${id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ nome, email, telefone, especialidade })
+            })
+            .then(response => {
+                if (!response.ok) throw new Error('Erro ao atualizar médico');
+                return response.json();
+            })
+            .then(data => {
+                showAlert('alert-medico', 'Médico atualizado com sucesso!', 'success');
+                fecharModalEditarMedico();
+                carregarMedicos(); // Recarregar lista
+                carregarDropdownMedicos(); // Atualizar dropdown
+            })
+            .catch(err => {
+                console.error('Erro:', err);
+                showAlert('alert-medico', 'Erro ao atualizar médico: ' + err.message, 'error');
+            });
+        }
+
+        // ==========================================
+        // 📝 Funções de Edição de Doentes
+        // ==========================================
+        function editarDoente(id) {
+            const doente = doentesData.find(d => d.id === id);
+            if (!doente) {
+                alert('Doente não encontrado');
+                return;
+            }
+
+            // Preencher dropdown de médicos se não estiver já
+            const medicoSelect = document.getElementById('editar-doe-medico');
+            if (!medicoSelect.querySelector('option[value="' + doente.medicoId + '"]')) {
+                carregarDropdownMedicosEditarDoente();
+            }
+
+            // Preencher modal com dados do doente
+            document.getElementById('editar-doente-id').value = doente.id;
+            document.getElementById('editar-doe-nome').value = doente.nome;
+            document.getElementById('editar-doe-email').value = doente.email;
+            document.getElementById('editar-doe-telefone').value = doente.telefone || '';
+            document.getElementById('editar-doe-medico').value = doente.medicoId || '';
+
+            // Abrir modal
+            document.getElementById('editarDoenteModal').classList.add('active');
+        }
+
+        function fecharModalEditarDoente() {
+            document.getElementById('editarDoenteModal').classList.remove('active');
+        }
+
+        function carregarDropdownMedicosEditarDoente() {
+            const medicosSelect = document.getElementById('editar-doe-medico');
+            if (!medicosSelect) return;
+            medicosSelect.innerHTML = '<option value="">Selecione um médico...</option>';
+            medicosData.forEach(medico => {
+                const option = document.createElement('option');
+                option.value = medico.id;
+                option.textContent = medico.nome;
+                medicosSelect.appendChild(option);
+            });
+        }
+
+        function atualizarDoente() {
+            const id = document.getElementById('editar-doente-id').value;
+            const nome = document.getElementById('editar-doe-nome').value;
+            const email = document.getElementById('editar-doe-email').value;
+            const telefone = document.getElementById('editar-doe-telefone').value;
+            const medicoId = document.getElementById('editar-doe-medico').value;
+
+            if (!nome || !email || !medicoId) {
+                showAlert('alert-doente', 'Por favor, preencha todos os campos obrigatórios.', 'error');
+                return;
+            }
+
+            // Enviar para o servidor
+            fetch(`/utentes/${id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                    nome, 
+                    email, 
+                    telefone,
+                    medico_id: Number(medicoId)
+                })
+            })
+            .then(response => {
+                if (!response.ok) throw new Error('Erro ao atualizar doente');
+                return response.json();
+            })
+            .then(data => {
+                showAlert('alert-doente', 'Doente atualizado com sucesso!', 'success');
+                fecharModalEditarDoente();
+                carregarDoentes(); // Recarregar lista
+            })
+            .catch(err => {
+                console.error('Erro:', err);
+                showAlert('alert-doente', 'Erro ao atualizar doente: ' + err.message, 'error');
+            });
+        }
+
+        // ==========================================
+        // 🔄 Fechar modais ao clicar fora
+        // ==========================================
+        window.onclick = function(event) {
+            const medicoModal = document.getElementById('editarMedicoModal');
+            const doenteModal = document.getElementById('editarDoenteModal');
+            
+            if (event.target === medicoModal) {
+                fecharModalEditarMedico();
+            }
+            if (event.target === doenteModal) {
+                fecharModalEditarDoente();
+            }
+        }
         async function init() {
             // Carregar dados do servidor na ordem correta para ter nomes de médicos nos doentes
             await carregarMedicos();
