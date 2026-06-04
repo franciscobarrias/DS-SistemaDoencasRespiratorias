@@ -2,7 +2,7 @@ function computeCaratFromAnswers(answers) {
     const values = Object.values(answers || {}) as Array<number | string>;
     const totalScore = values.reduce<number>((sum, value) => sum + Number(value || 0), 0);
 
-    let interpretation = 'Nao controlado';
+    let interpretation = 'Não controlado';
     if (totalScore > 24) {
         interpretation = 'Controlado';
     } else if (totalScore >= 16) {

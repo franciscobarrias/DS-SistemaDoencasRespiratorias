@@ -22,11 +22,11 @@ test('computeCaratFromAnswers returns partially controlled level', () => {
 test('computeCaratFromAnswers returns uncontrolled level', () => {
     const result = computeCaratFromAnswers({ q1: 2, q2: 2, q3: 2, q4: 2, q5: 2 });
     assert.equal(result.totalScore, 10);
-    assert.equal(result.interpretation, 'Nao controlado');
+    assert.equal(result.interpretation, 'Não controlado');
 });
 
 test('recommendations and next step exist for all interpretation levels', () => {
-    for (const level of ['Controlado', 'Parcialmente controlado', 'Nao controlado']) {
+    for (const level of ['Controlado', 'Parcialmente controlado', 'Não controlado']) {
         const recs = recommendationsFromInterpretation(level);
         assert.ok(Array.isArray(recs));
         assert.ok(recs.length > 0);
