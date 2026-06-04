@@ -19,27 +19,38 @@ if (typeof globalThis.fetch === 'function') {
 }
 
 async function getObservationsFromFhir(
-    code: string = '8310-5',
+    code?: string,
     patient?: string
 ): Promise<any[]> {
 
-    let url = `${FHIR_BASE_URL}/Observation?code=${encodeURIComponent(code)}`;
+    const params: string[] = ['_count=200'];
+    if (code) params.push(`code=${encodeURIComponent(code)}`);
+    if (patient) params.push(`subject=${encodeURIComponent(`Patient/${patient}`)}`);
 
-    if (patient) {
-        url += `&subject=Patient/${patient}`;
+    let url = `${FHIR_BASE_URL}/Observation${params.length ? `?${params.join('&')}` : ''}`;
+    const allEntries: any[] = [];
+
+    // Seguir paginação do Bundle para obter visão global completa
+    while (url) {
+        const resposta = await _fetch!(url);
+        if (!resposta.ok) {
+            throw new Error(`Erro FHIR: ${resposta.status} - ${resposta.statusText}`);
+        }
+
+        const bundle = await resposta.json();
+        const entries = Array.isArray(bundle.entry) ? bundle.entry : [];
+        allEntries.push(...entries);
+
+        const nextLink = Array.isArray(bundle.link)
+            ? bundle.link.find((l: any) => l.relation === 'next')
+            : undefined;
+        url = nextLink?.url || '';
     }
 
-    const resposta = await _fetch!(url);
-
-    if (!resposta.ok) {
-        throw new Error(`Erro FHIR: ${resposta.status} - ${resposta.statusText}`);
-    }
-
-    const bundle = await resposta.json();
-    const entries = bundle.entry || [];
+    const patientNameCache = new Map<string, string>();
 
     // Para cada observation, mapear e tentar buscar o nome do paciente associado
-    const results = await Promise.all(entries.map(async (entry: any) => {
+    const results = await Promise.all(allEntries.map(async (entry: any) => {
         const resource = entry.resource;
         const mapped = mapObservation(resource);
 
@@ -48,16 +59,18 @@ async function getObservationsFromFhir(
         if (ref && ref.startsWith('Patient/')) {
             const patientId = ref.split('/')[1];
             try {
-                const patient = await getPatientFromFhir(patientId);
-                // tenta extrair nome legível
-                const name = Array.isArray(patient.name) && patient.name.length > 0 ? patient.name[0] : undefined;
-                if (name) {
-                    const given = Array.isArray(name.given) ? name.given.join(' ') : (name.given || '');
-                    const family = name.family || '';
-                    mapped.patientName = `${given} ${family}`.trim();
-                } else {
-                    mapped.patientName = patientId;
+                if (!patientNameCache.has(patientId)) {
+                    const patientObj = await getPatientFromFhir(patientId);
+                    const name = Array.isArray(patientObj.name) && patientObj.name.length > 0 ? patientObj.name[0] : undefined;
+                    if (name) {
+                        const given = Array.isArray(name.given) ? name.given.join(' ') : (name.given || '');
+                        const family = name.family || '';
+                        patientNameCache.set(patientId, `${given} ${family}`.trim() || patientId);
+                    } else {
+                        patientNameCache.set(patientId, patientId);
+                    }
                 }
+                mapped.patientName = patientNameCache.get(patientId) || patientId;
             } catch (err) {
                 mapped.patientName = ref;
             }

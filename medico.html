@@ -137,7 +137,7 @@
 
         <div class="card card-danger">
 
-            <h2>Alertas Clínicos <button class="btn-red" onclick="carregarAlertas()">↻ Atualizar</button></h2>
+            <h2>Alertas Clínicos <button class="btn-white" onclick="carregarAlertas()"></button></h2>
 
             <ul id="lista-alertas">
 
@@ -183,7 +183,7 @@
 
                 <div>
 
-                    <button class="btn-cyan" onclick="sincronizarTodosFhir()" style="background:#0891b2;">🔄 Sincronizar FHIR</button>
+                    <button id="btn-sync-fhir" class="btn-cyan" style="background:#0891b2;">🔄 Sincronizar FHIR</button>
 
                 </div>
 
@@ -203,7 +203,7 @@
 
         <div class="card">
 
-            <h2>Observações FHIR <button class="btn-purple" onclick="carregarObservacoesFHIR()" style="background:#8b5cf6;">↻ Atualizar</button></h2>
+            <h2>Observações FHIR <button id="btn-update-fhir-observations" class="btn-purple" style="background:#8b5cf6;">↻ Atualizar</button></h2>
 
             <ul id="lista-fhir-observacoes">
 
@@ -216,7 +216,7 @@
         
         <div class="card">
 
-            <h2>Sintomas Reportados <button class="btn-orange" onclick="carregarSintomas()">↻ Atualizar</button></h2>
+            <h2>Sintomas Reportados <button id="btn-update-sintomas" class="btn-white"></button></h2>
 
             <ul id="lista-sintomas">
 
@@ -345,8 +345,8 @@
                 <div class="modal-subcard modal-col-full">
 
                     <h3 style="color: var(--primary); margin-bottom: 10px; font-size: 15px; display:flex; justify-content: space-between; align-items: center; gap: 10px;">📊 Observações FHIR (Medicamentos, Pressão...)
-                        <button class="btn-green" onclick="sincronizarObservacoesFhir(utenteFichaAtualId)" style="font-size:12px; padding:6px 10px; border:none; border-radius:6px; cursor:pointer;">🔄 Sincronizar FHIR</button>
-                    </h3>
+                                <button id="btn-sync-fhir-utente" class="btn-green" style="font-size:12px; padding:6px 10px; border:none; border-radius:6px; cursor:pointer;">🔄 Sincronizar FHIR</button>
+                            </h3>
 
                     <ul id="prof-lista-observacoes-fhir" style="list-style: none; padding: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 10px;"></ul>
 
@@ -381,21 +381,32 @@
 
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="app.js?v=21"></script>
 
     <script>
+        // Fallback helper caso não exista (garante que não há ReferenceError)
+        if (typeof escaparHTML !== 'function') {
+            function escaparHTML(texto) {
+                if (!texto) return '';
+                const div = document.createElement('div');
+                div.textContent = texto;
+                return div.innerHTML;
+            }
+        }
+
         // Tema
         function toggleTheme() {
             const html = document.documentElement;
             const isDark = html.getAttribute('data-theme') === 'dark';
             html.setAttribute('data-theme', isDark ? 'light' : 'dark');
             localStorage.setItem('theme', isDark ? 'light' : 'dark');
-            document.getElementById('btn-theme').textContent = isDark ? '🌙' : '☀️';
+            const btn = document.getElementById('btn-theme'); if (btn) btn.textContent = isDark ? '🌙' : '☀️';
         }
 
         // Carregar tema guardado
         const savedTheme = localStorage.getItem('theme') || 'light';
         document.documentElement.setAttribute('data-theme', savedTheme);
-        document.getElementById('btn-theme').textContent = savedTheme === 'dark' ? '☀️' : '🌙';
+        const btnTheme = document.getElementById('btn-theme'); if (btnTheme) btnTheme.textContent = savedTheme === 'dark' ? '☀️' : '🌙';
 
         function logout() {
             if (confirm('Tem a certeza que deseja terminar a sessão?')) {
@@ -406,22 +417,246 @@
                 form.submit();
             }
         }
-
-        // Funções placeholder - serão preenchidas com o app.js existente
-        function carregarUtentes() { console.log('Carregando utentes...'); }
-        function carregarAlertas() { console.log('Carregando alertas...'); }
-        function carregarAvaliacoes() { console.log('Carregando avaliações...'); }
-        function sincronizarTodosFhir() { console.log('Sincronizando FHIR...'); }
-        function carregarObservacoesFHIR() { console.log('Carregando observações FHIR...'); }
-        function carregarSintomas() { console.log('Carregando sintomas...'); }
-        function gravarNovoSintoma() { console.log('Gravando novo sintoma...'); }
-        function exportarDadosCSV() { console.log('Exportando dados...'); }
-        function fecharFichaClinica() { document.getElementById('modal-perfil').style.display = 'none'; }
-        function gravarMedicamento() { console.log('Gravando medicamento...'); }
-        function gravarTemperatura() { console.log('Gravando temperatura...'); }
     </script>
 
-    <script src="dist/app.js?v=21"></script>
+    <script>
+        // Compatibilidade / glue code: expõe funções globais e liga event listeners
+        (function () {
+            // Usa API_URL se disponível (definido em app.js)
+            const base = typeof API_URL !== 'undefined' ? API_URL : 'http://localhost:3000';
+
+            // Carregar Observações FHIR (lista global)
+            async function _carregarObservacoesFHIR() {
+                const lista = document.getElementById('lista-fhir-observacoes');
+                if (!lista) return;
+                lista.innerHTML = '<li class="empty-state">A carregar observações FHIR...</li>';
+                try {
+                    const res = await fetch(`${base}/fhir/observations`);
+                    const observacoes = await res.json();
+                    lista.innerHTML = '';
+                    if (!Array.isArray(observacoes) || observacoes.length === 0) {
+                        lista.innerHTML = '<li class="empty-state">Sem dados carregados.</li>';
+                        return;
+                    }
+                    observacoes.forEach(obs => {
+                        const item = document.createElement('li');
+                        const corStatus = obs.status === 'final' ? '#10b981' : '#f59e0b';
+                        const valorObs = (() => {
+                            if (obs.value !== undefined && obs.value !== null && String(obs.value).trim() !== '') {
+                                return String(obs.value);
+                            }
+                            if (obs.valueQuantity?.value !== undefined && obs.valueQuantity?.value !== null) {
+                                return String(obs.valueQuantity.value);
+                            }
+                            if (typeof obs.valueString === 'string' && obs.valueString.trim()) {
+                                return obs.valueString;
+                            }
+                            if (obs.valueCodeableConcept?.text) {
+                                return obs.valueCodeableConcept.text;
+                            }
+                            if (obs.valueCodeableConcept?.coding?.[0]?.display) {
+                                return obs.valueCodeableConcept.coding[0].display;
+                            }
+                            return 'Sem valor';
+                        })();
+                        const unidadeObs = obs.unit || obs.valueQuantity?.unit || obs.valueQuantity?.code || '';
+                        const dataObs = obs.effectiveDateTime || obs.effectiveDateTimeRaw || '';
+                        item.innerHTML = `
+                            <div style="display:flex; justify-content: space-between; align-items: center;">
+                                <div>
+                                    <strong>${escaparHTML(obs.display || obs.code || '')}</strong>
+                                    <span class="badge" style="background-color: ${corStatus}; color: white; margin-left: 8px;">${escaparHTML(obs.status || '')}</span>
+                                </div>
+                            </div>
+                            <div style="color: var(--text-muted); font-size: 13px; margin-top: 5px;">
+                                📊 <strong>Valor:</strong> ${escaparHTML(valorObs)} ${escaparHTML(unidadeObs)} | 📅 ${escaparHTML(dataObs)}
+                            </div>
+                            <div style="color: var(--text-muted); font-size: 12px; margin-top: 3px;">
+                                🔗 Paciente: ${escaparHTML(obs.patientName || obs.subject || '')}
+                            </div>
+                        `;
+                        lista.appendChild(item);
+                    });
+                } catch (err) {
+                    console.error('Erro ao carregar observações FHIR (medico glue):', err);
+                    if (lista) lista.innerHTML = '<li class="empty-state">Erro ao carregar observações.</li>';
+                }
+            }
+
+            // Sincronizar todos do FHIR
+            async function _sincronizarTodosFhir() {
+                if (!confirm('Isto vai sincronizar TODOS os patients do servidor FHIR. Continuar?')) return;
+                try {
+                    const res = await fetch(`${base}/utentes/sync/fhir-all`, { method: 'POST' });
+                    const resultado = await res.json();
+                    if (!res.ok) {
+                        alert(`Erro na sincronização: ${resultado.error || res.statusText}`);
+                        return;
+                    }
+                    // Recarregar utentes se função existente
+                    if (typeof carregarUtentes === 'function') await carregarUtentes();
+                    alert(`✅ Sincronização concluída!\n\nPatients encontrados: ${resultado.total || 0}\nImportados: ${resultado.imported || 0}\nErros: ${resultado.errors || 0}`);
+                } catch (err) {
+                    console.error('Erro ao sincronizar FHIR (medico glue):', err);
+                    alert('Erro de comunicação ao sincronizar com FHIR.');
+                }
+            }
+
+            // Sincronizar observações de um utente e recarregar a lista do modal
+            async function _sincronizarObservacoesFhir(utenteId) {
+                if (!utenteId) return alert('ID do utente inválido para sincronização.');
+                if (!confirm('Sincronizar observações FHIR para este utente?')) return;
+                try {
+                    const res = await fetch(`${base}/utentes/${utenteId}/sincronizar-observacoes-fhir`, { method: 'POST' });
+                    const resultado = await res.json();
+                    if (!res.ok) {
+                        alert(`Erro na sincronização: ${resultado.error || res.statusText}`);
+                        return;
+                    }
+                    // Se a função específica existir (do app.js), use-a
+                    if (typeof carregarObservacoesFhirDoUtente === 'function') {
+                        await carregarObservacoesFhirDoUtente(utenteId);
+                    } else {
+                        // senão tenta atualizar o container do modal diretamente
+                        const lista = document.getElementById('prof-lista-observacoes');
+                        if (lista) lista.innerHTML = '<div class="empty-state">A carregar observações...</div>';
+                    }
+                    alert('Sincronização concluída.');
+                } catch (err) {
+                    console.error('Erro ao sincronizar observações FHIR (medico glue):', err);
+                    alert('Erro ao sincronizar observações.');
+                }
+            }
+
+            // Carregar sintomas reportados (global)
+            async function _carregarSintomasReportados() {
+                const lista = document.getElementById('lista-sintomas');
+                if (!lista) return;
+                lista.innerHTML = '<li class="empty-state">A carregar sintomas...</li>';
+                try {
+                    const res = await fetch(`${base}/sintomas?t=${Date.now()}`);
+                    if (!res.ok) {
+                        lista.innerHTML = '<li class="empty-state">Erro ao carregar sintomas.</li>';
+                        return;
+                    }
+                    const sintomas = await res.json();
+                    lista.innerHTML = '';
+                    if (!Array.isArray(sintomas) || sintomas.length === 0) {
+                        lista.innerHTML = '<li class="empty-state">Sem dados carregados.</li>';
+                        return;
+                    }
+                    sintomas.forEach(s => {
+                        const item = document.createElement('li');
+                        item.innerHTML = `
+                            <div style="display:flex; justify-content: space-between; align-items: center;">
+                                <div>
+                                    <strong>Utente ID: ${escaparHTML(String(s.utente_id || ''))}</strong>
+                                </div>
+                                <div style="font-size:12px; color:var(--text-muted);">${escaparHTML(s.severidade || '')}</div>
+                            </div>
+                            <div style="color: var(--text-muted); font-size: 13px; margin-top: 5px;">${escaparHTML(s.descricao || '')}</div>
+                        `;
+                        const btnDel = document.createElement('button');
+                        btnDel.style.cssText = 'background: transparent; border:none; color:#ef4444; cursor:pointer; margin-left:8px;';
+                        btnDel.textContent = '🗑️';
+                        btnDel.addEventListener('click', async () => {
+                            if (!confirm('Eliminar sintoma?')) return;
+                            try {
+                                const d = await fetch(`${base}/sintomas/${s.id}`, { method: 'DELETE' });
+                                if (d.ok) {
+                                    if (typeof carregarSintomas === 'function') carregarSintomas();
+                                    if (typeof carregarSintomasReportados === 'function') carregarSintomasReportados();
+                                } else alert('Erro ao eliminar sintoma.');
+                            } catch (err) { console.error(err); alert('Erro ao eliminar sintoma.'); }
+                        });
+                        item.appendChild(btnDel);
+                        lista.appendChild(item);
+                    });
+                } catch (err) {
+                    console.error('Erro ao carregar sintomas (medico glue):', err);
+                    lista.innerHTML = '<li class="empty-state">Erro ao carregar sintomas.</li>';
+                }
+            }
+
+            // Carregar observações de um paciente específico (modal)
+            async function _carregarObservacoesPacienteFHIR(pacienteId) {
+                if (!pacienteId) return;
+                const listaModal = document.getElementById('prof-lista-observacoes');
+                if (!listaModal) return;
+                listaModal.innerHTML = '<div class="empty-state">A carregar observações...</div>';
+                try {
+                    try {
+                        await fetch(`${base}/utentes/${pacienteId}/sincronizar-observacoes-fhir`, { method: 'POST' });
+                    } catch (syncErr) {
+                        console.warn(`[Obs Load] Sincronização silenciosa falhou para paciente ${pacienteId}:`, syncErr);
+                    }
+
+                    const res = await fetch(`${base}/utentes/${pacienteId}/observacoes-fhir`);
+                    if (!res.ok) {
+                        listaModal.innerHTML = '<div class="empty-state">Erro ao carregar observações.</div>';
+                        return;
+                    }
+                    const observacoes = await res.json();
+                    listaModal.innerHTML = '';
+                    if (!Array.isArray(observacoes) || observacoes.length === 0) {
+                        listaModal.innerHTML = '<div class="empty-state">Sem dados carregados.</div>';
+                        return;
+                    }
+                    observacoes.forEach(obs => {
+                        const item = document.createElement('div');
+                        item.style.cssText = 'padding:8px; border-bottom:1px solid #e5e7eb;';
+                        const tipo = obs.code?.text || (obs.code && obs.code.coding && obs.code.coding[0] && obs.code.coding[0].display) || obs.tipo || '';
+                        const valor = obs.valor || obs.valueQuantity?.value || obs.valueString || (obs.valueCodeableConcept && (obs.valueCodeableConcept.text || (obs.valueCodeableConcept.coding && obs.valueCodeableConcept.coding[0] && obs.valueCodeableConcept.coding[0].display))) || '';
+                        const unidade = obs.unidade || obs.valueQuantity?.unit || obs.valueQuantity?.code || '';
+                        const data = obs.data_efetiva || obs.effectiveDateTime || obs.effectiveDateTimeRaw || '';
+                        item.innerHTML = `
+                            <div><strong>${escaparHTML(tipo)}</strong> <span class="badge" style="background:#10b981; color:white;">${escaparHTML(obs.status || '')}</span></div>
+                            <div style="color:var(--text-muted); font-size:12px;">Valor: ${escaparHTML(String(valor))} ${escaparHTML(unidade)} | ${escaparHTML(data)}</div>
+                        `;
+                        listaModal.appendChild(item);
+                    });
+                } catch (err) {
+                    console.error('Erro ao carregar observações do paciente (medico glue):', err);
+                    listaModal.innerHTML = '<div class="empty-state">Erro ao carregar observações.</div>';
+                }
+            }
+
+            // Expor aliases/glue
+            if (typeof window.carregarSintomasReportados !== 'function') window.carregarSintomasReportados = _carregarSintomasReportados;
+            if (typeof window.carregarObservacoesPacienteFHIR !== 'function') window.carregarObservacoesPacienteFHIR = _carregarObservacoesPacienteFHIR;
+            // Backwards-compatible aliases expected by older app bundles
+            if (typeof window.carregarSintomas !== 'function' && typeof window.carregarSintomasReportados === 'function') {
+                // do not override if real carregarSintomas exists
+                window.carregarSintomas = window.carregarSintomasReportados;
+            }
+            if (typeof window.carregarObservacoesFhirDoUtente !== 'function' && typeof window.carregarObservacoesPacienteFHIR === 'function') {
+                window.carregarObservacoesFhirDoUtente = window.carregarObservacoesPacienteFHIR;
+            }
+
+            // Expor globalmente (garante compatibilidade com onclicks antigos)
+            if (typeof window.carregarObservacoesFHIR !== 'function') window.carregarObservacoesFHIR = _carregarObservacoesFHIR;
+            if (typeof window.sincronizarTodosFhir !== 'function') window.sincronizarTodosFhir = _sincronizarTodosFhir;
+            if (typeof window.sincronizarObservacoesFhir !== 'function') window.sincronizarObservacoesFhir = _sincronizarObservacoesFhir;
+
+            // Bind addEventListener aos botões (preferível a onclick inline)
+            document.addEventListener('DOMContentLoaded', () => {
+                const btnSync = document.getElementById('btn-sync-fhir');
+                if (btnSync) btnSync.addEventListener('click', window.sincronizarTodosFhir);
+
+                const btnUpdateObs = document.getElementById('btn-update-fhir-observations');
+                if (btnUpdateObs) btnUpdateObs.addEventListener('click', window.carregarObservacoesFHIR);
+                const btnUpdateSintomas = document.getElementById('btn-update-sintomas');
+                if (btnUpdateSintomas) btnUpdateSintomas.addEventListener('click', () => {
+                    if (typeof window.carregarSintomasReportados === 'function') window.carregarSintomasReportados();
+                    else if (typeof window.carregarSintomas === 'function') window.carregarSintomas();
+                });
+                const btnSyncUtente = document.getElementById('btn-sync-fhir-utente');
+                if (btnSyncUtente) btnSyncUtente.addEventListener('click', () => {
+                    try { window.sincronizarObservacoesFhir(utenteFichaAtualId); } catch (e) { console.error(e); }
+                });
+            });
+        })();
+    </script>
 
 </body>
 

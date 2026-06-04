@@ -51,10 +51,60 @@ const ensureFhirIdColumn = async () => {
     }
 };
 
+const ensureNumeroIdentidadeColumn = async () => {
+    try {
+        const cols = await dbAll('PRAGMA table_info(utentes)');
+        const hasCol = Array.isArray(cols) && cols.some((c) => c.name === 'numero_identidade');
+        if (!hasCol) {
+            await dbRun('ALTER TABLE utentes ADD COLUMN numero_identidade TEXT');
+        }
+    } catch (err) {
+        console.error('Failed to ensure numero_identidade column exists', err);
+    }
+};
+
+const ensureMedicosColumns = async () => {
+    try {
+        const cols = await dbAll('PRAGMA table_info(medicos)');
+        const hasTelefone = Array.isArray(cols) && cols.some((c) => c.name === 'telefone');
+        const hasStatus = Array.isArray(cols) && cols.some((c) => c.name === 'status');
+
+        if (!hasTelefone) {
+            await dbRun('ALTER TABLE medicos ADD COLUMN telefone TEXT');
+        }
+
+        if (!hasStatus) {
+            await dbRun("ALTER TABLE medicos ADD COLUMN status TEXT DEFAULT 'Ativo'");
+        }
+
+        await dbRun("UPDATE medicos SET status = 'Ativo' WHERE status IS NULL OR TRIM(COALESCE(status, '')) = ''");
+    } catch (err) {
+        console.error('Failed to ensure medicos columns exist', err);
+    }
+};
+
 const persistFhirId = async (utenteId, fhirId) => {
     if (!fhirId) return;
     await ensureFhirIdColumn();
     await dbRun('UPDATE utentes SET fhir_id = ? WHERE id = ?', [fhirId, utenteId]);
+};
+
+const persistNumeroIdentidade = async (utenteId, numeroIdentidade) => {
+    if (!numeroIdentidade) return;
+    await ensureNumeroIdentidadeColumn();
+    await dbRun('UPDATE utentes SET numero_identidade = ? WHERE id = ?', [numeroIdentidade, utenteId]);
+};
+
+const normalizeText = (value) => String(value || '').trim().toLowerCase();
+
+const extractFhirPatientIdentifiers = (patient) => {
+    const identifiers = new Set();
+    if (patient?.id) identifiers.add(String(patient.id));
+    const patientIdentifiers = Array.isArray(patient?.identifier) ? patient.identifier : [];
+    patientIdentifiers.forEach((identifier) => {
+        if (identifier?.value) identifiers.add(String(identifier.value));
+    });
+    return [...identifiers];
 };
 
 const clinicaController = {
@@ -70,6 +120,8 @@ const clinicaController = {
     syncAllFhirPatients: async (req, res) => {
         try {
             console.log('[FHIR Sync] Iniciando sincronização de todos os patients do FHIR...');
+            await ensureFhirIdColumn();
+            await ensureNumeroIdentidadeColumn();
 
             // Buscar todos os patients do FHIR
             let allPatients: any[] = [];
@@ -103,11 +155,13 @@ const clinicaController = {
                 });
             }
 
-            // Verificar quais já existem localmente
-            const existingFhirIds = await dbAll('SELECT fhir_id FROM utentes WHERE fhir_id IS NOT NULL AND fhir_id != ""') as Array<{ fhir_id: string }>;
-            const existingIds = new Set(existingFhirIds.map(u => u.fhir_id));
+            // Verificar quais já existem localmente por fhir_id, email ou número de identidade
+            const existingUtentes = await dbAll('SELECT id, nome, email, numero_identidade, fhir_id FROM utentes') as Array<{ id: number; nome: string; email?: string; numero_identidade?: string; fhir_id?: string }>;
+            const existingFhirIds = new Set(existingUtentes.map(u => normalizeText(u.fhir_id)).filter(Boolean));
+            const existingEmails = new Set(existingUtentes.map(u => normalizeText(u.email)).filter(Boolean));
+            const existingNumerosIdentidade = new Set(existingUtentes.map(u => normalizeText(u.numero_identidade)).filter(Boolean));
 
-            console.log(`[FHIR Sync] ${existingIds.size} patients já existem localmente`);
+            console.log(`[FHIR Sync] ${existingUtentes.length} utentes já existem localmente`);
 
             // Importar novos patients
             let imported = 0;
@@ -119,8 +173,18 @@ const clinicaController = {
                     continue;
                 }
                 
-                if (existingIds.has(patient.id)) {
-                    console.log(`[FHIR Sync] Patient ${patient.id} já existe localmente, pulando...`);
+                const patientIdentifiers = extractFhirPatientIdentifiers(patient);
+                const patientEmail = normalizeText(patient.telecom?.find((t: any) => t.system === 'email')?.value);
+                const patientNumeroIdentidade = normalizeText(patient.identifier?.find((i: any) => i.system === 'urn:local:utente-id')?.value || patient.identifier?.[0]?.value);
+
+                const alreadyExists =
+                    existingFhirIds.has(normalizeText(patient.id)) ||
+                    (patientEmail && existingEmails.has(patientEmail)) ||
+                    (patientNumeroIdentidade && existingNumerosIdentidade.has(patientNumeroIdentidade)) ||
+                    patientIdentifiers.some((value) => existingNumerosIdentidade.has(normalizeText(value)));
+
+                if (alreadyExists) {
+                    console.log(`[FHIR Sync] Patient ${patient.id} já existe localmente (fhir_id/email/identidade), pulando...`);
                     continue;
                 }
 
@@ -134,18 +198,25 @@ const clinicaController = {
                     const telecom = patient.telecom || [];
                     const email = telecom.find((t: any) => t.system === 'email')?.value || '';
                     const telefone = telecom.find((t: any) => t.system === 'phone')?.value || '';
+                    const numeroIdentidade = patient.identifier?.find((i: any) => i.system === 'urn:local:utente-id')?.value
+                        || patient.identifier?.[0]?.value
+                        || '';
 
                     // Inserir na BD
                     const result = await new Promise((resolve, reject) => {
                         db.run(
-                            'INSERT INTO utentes (nome, email, telefone, fhir_id) VALUES (?, ?, ?, ?)',
-                            [nome, email, telefone, patient.id],
+                            'INSERT INTO utentes (nome, email, telefone, fhir_id, numero_identidade) VALUES (?, ?, ?, ?, ?)',
+                            [nome, email, telefone, patient.id, numeroIdentidade || null],
                             function(err) {
                                 if (err) return reject(err);
                                 resolve({ id: this.lastID });
                             }
                         );
                     });
+
+                    if (numeroIdentidade) {
+                        await persistNumeroIdentidade((result as any).id, numeroIdentidade);
+                    }
 
                     console.log(`[FHIR Sync] Patient ${patient.id} (${nome}) importado com sucesso`);
                     imported++;
@@ -269,17 +340,20 @@ const clinicaController = {
 
     // 🛡️ NOVA FUNÇÃO: Gravar novo utente na base de dados
     addUtente: (req, res) => {
-        const { nome, email, telefone, medico_id } = req.body;
+        const { nome, email, telefone, medico_id, numero_identidade } = req.body;
         
         // Validação básica
         if (!nome) return res.status(400).json({ error: "Nome é obrigatório." });
 
-        db.run("INSERT INTO utentes (nome, email, telefone, medico_id) VALUES (?, ?, ?, ?)",
-            [nome, email || '', telefone || '', medico_id || null], async function(err) {
+        (async () => {
+            await ensureFhirIdColumn();
+            await ensureNumeroIdentidadeColumn();
+            db.run("INSERT INTO utentes (nome, email, telefone, medico_id, numero_identidade) VALUES (?, ?, ?, ?, ?)",
+            [nome, email || '', telefone || '', medico_id || null, numero_identidade || null], async function(err) {
             if (err) return res.status(500).json({ error: err.message });
 
             const newId = this.lastID;
-            const utenteObj = { id: newId, nome, email: email || '', telefone: telefone || '' };
+            const utenteObj = { id: newId, nome, email: email || '', telefone: telefone || '', numero_identidade: numero_identidade || '' };
 
             // Tentar criar o Patient no servidor FHIR — não falhará a criação local se o FHIR falhar.
             try {
@@ -288,15 +362,25 @@ const clinicaController = {
 
                 if (fhirId) {
                     await persistFhirId(newId, fhirId);
+                    if (numero_identidade) {
+                        await persistNumeroIdentidade(newId, numero_identidade);
+                    }
                     return res.status(201).json({ id: newId, mensagem: "Utente adicionado com sucesso", fhirId });
                 } else {
+                    if (numero_identidade) {
+                        await persistNumeroIdentidade(newId, numero_identidade);
+                    }
                     return res.status(201).json({ id: newId, mensagem: "Utente adicionado com sucesso (FHIR sem id retornado)", fhirResponse: fhirRes });
                 }
             } catch (ferr) {
                 console.error('FHIR create failed for utente', newId, ferr);
+                if (numero_identidade) {
+                    await persistNumeroIdentidade(newId, numero_identidade);
+                }
                 return res.status(201).json({ id: newId, mensagem: "Utente adicionado com sucesso (FHIR falhou)", fhirError: String(ferr) });
             }
         });
+        })().catch((err) => res.status(500).json({ error: String(err) }));
     },
 
     // US06: Listar apenas Alertas Ativos (Estado NOVO)
@@ -464,7 +548,7 @@ const clinicaController = {
 
     // Listar as avaliações CARAT para alimentar a tabela do Dashboard
     getAvaliacoes: (req, res) => {
-        db.all("SELECT * FROM avaliacoes_carat ORDER BY data DESC", [], (err, rows) => {
+        db.all("SELECT * FROM avaliacoes_carat ORDER BY datetime(data) DESC, id DESC", [], (err, rows) => {
             if (err) return res.status(500).json({ error: err.message });
             res.json(rows);
         });
@@ -594,8 +678,8 @@ const clinicaController = {
                     const obsId = obs.id;
                     const codigo = obs.code?.coding?.[0]?.code || 'unknown';
                     const display = obs.code?.coding?.[0]?.display || 'Sem nome';
-                    const valor = obs.value?.Quantity?.value || obs.valueString || obs.value?.CodeableConcept?.coding?.[0]?.display || '';
-                    const unidade = obs.value?.Quantity?.unit || '';
+                    const valor = obs.valueQuantity?.value ?? obs.value?.Quantity?.value ?? obs.valueString ?? obs.valueCodeableConcept?.text ?? obs.valueCodeableConcept?.coding?.[0]?.display ?? obs.value?.CodeableConcept?.coding?.[0]?.display ?? '';
+                    const unidade = obs.valueQuantity?.unit || obs.valueQuantity?.code || obs.value?.Quantity?.unit || '';
                     const dataEfetiva = obs.effectiveDateTime || new Date().toISOString();
                     const status = obs.status || 'final';
 
@@ -614,7 +698,19 @@ const clinicaController = {
                             [utente.id, obsId, codigo, display, valor, unidade, dataEfetiva, status, tipo],
                             function(err) {
                                 if (err && err.message.includes('UNIQUE')) {
-                                    resolve({ duplicada: true });
+                                    db.run(
+                                        `UPDATE observacoes_fhir
+                                         SET codigo = ?, display = ?, valor = ?, unidade = ?, data_efetiva = ?, status = ?, tipo = ?, data_sincronizacao = CURRENT_TIMESTAMP
+                                         WHERE fhir_observation_id = ?`,
+                                        [codigo, display, valor, unidade, dataEfetiva, status, tipo, obsId],
+                                        function(updateErr) {
+                                            if (updateErr) {
+                                                resolve({ erro: true, msg: updateErr.message });
+                                            } else {
+                                                resolve({ duplicada: true, atualizada: true });
+                                            }
+                                        }
+                                    );
                                 } else if (err) {
                                     resolve({ erro: true, msg: err.message });
                                 } else {
@@ -624,7 +720,10 @@ const clinicaController = {
                         );
                     });
 
-                    if (result.duplicada) {
+                    if (result.atualizada) {
+                        sincronizadas++;
+                        console.log(`[Obs Sync] ♻️ ${display} atualizada (${valor} ${unidade})`);
+                    } else if (result.duplicada) {
                         duplicadas++;
                     } else if (result.sucesso) {
                         sincronizadas++;
@@ -730,50 +829,74 @@ const clinicaController = {
     // 🏥 CRUD de MÉDICOS
     // ==========================================
     
-    getAllMedicos: (req, res) => {
-        db.all("SELECT * FROM medicos ORDER BY nome", [], (err, rows) => {
-            if (err) return res.status(500).json({ error: err.message });
-            res.json(rows || []);
-        });
+    getAllMedicos: async (req, res) => {
+        try {
+            await ensureMedicosColumns();
+
+            db.all("SELECT * FROM medicos ORDER BY nome", [], (err, rows) => {
+                if (err) return res.status(500).json({ error: err.message });
+                const normalized = (rows || []).map((row: any) => ({
+                    ...row,
+                    telefone: row.telefone || '-',
+                    status: row.status || 'Ativo'
+                }));
+                res.json(normalized);
+            });
+        } catch (err) {
+            return res.status(500).json({ error: String(err) });
+        }
     },
 
-    addMedico: (req, res) => {
+    addMedico: async (req, res) => {
         const { nome, email, telefone, especialidade } = req.body;
         
         if (!nome) return res.status(400).json({ error: "Nome é obrigatório." });
 
-        db.run("INSERT INTO medicos (nome, email, especialidade) VALUES (?, ?, ?)",
-            [nome, email || '', especialidade || ''], function(err) {
-            if (err) return res.status(500).json({ error: err.message });
-            
-            const newId = this.lastID;
-            res.status(201).json({ 
-                id: newId, 
-                nome, 
-                email: email || '', 
-                telefone: telefone || '',
-                especialidade: especialidade || '',
-                mensagem: "Médico adicionado com sucesso" 
+        try {
+            await ensureMedicosColumns();
+
+            db.run("INSERT INTO medicos (nome, email, telefone, especialidade, status) VALUES (?, ?, ?, ?, ?)",
+                [nome, email || '', telefone || '', especialidade || '', 'Ativo'], function(err) {
+                if (err) return res.status(500).json({ error: err.message });
+                
+                const newId = this.lastID;
+                res.status(201).json({ 
+                    id: newId, 
+                    nome, 
+                    email: email || '', 
+                    telefone: telefone || '',
+                    especialidade: especialidade || '',
+                    status: 'Ativo',
+                    mensagem: "Médico adicionado com sucesso" 
+                });
             });
-        });
+        } catch (err) {
+            return res.status(500).json({ error: String(err) });
+        }
     },
 
-    updateMedico: (req, res) => {
+    updateMedico: async (req, res) => {
         const { id } = req.params;
         const { nome, email, telefone, especialidade } = req.body;
         
         if (!nome) return res.status(400).json({ error: "Nome é obrigatório." });
 
-        db.run("UPDATE medicos SET nome = ?, email = ?, especialidade = ? WHERE id = ?",
-            [nome, email || '', especialidade || '', id], function(err) {
-            if (err) return res.status(500).json({ error: err.message });
-            
-            if (this.changes === 0) {
-                return res.status(404).json({ error: "Médico não encontrado." });
-            }
-            
-            res.json({ id, nome, email: email || '', telefone: telefone || '', especialidade: especialidade || '', mensagem: "Médico atualizado com sucesso" });
-        });
+        try {
+            await ensureMedicosColumns();
+
+            db.run("UPDATE medicos SET nome = ?, email = ?, telefone = ?, especialidade = ? WHERE id = ?",
+                [nome, email || '', telefone || '', especialidade || '', id], function(err) {
+                if (err) return res.status(500).json({ error: err.message });
+                
+                if (this.changes === 0) {
+                    return res.status(404).json({ error: "Médico não encontrado." });
+                }
+                
+                res.json({ id, nome, email: email || '', telefone: telefone || '', especialidade: especialidade || '', status: 'Ativo', mensagem: "Médico atualizado com sucesso" });
+            });
+        } catch (err) {
+            return res.status(500).json({ error: String(err) });
+        }
     },
 
     deleteMedico: (req, res) => {

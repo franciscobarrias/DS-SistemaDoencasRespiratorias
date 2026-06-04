@@ -46,6 +46,24 @@ body { background-color: var(--bg); color: var(--text-main); padding: 0 20px 40p
 }
 .theme-toggle:hover { background: rgba(255,255,255,0.4); }
 
+.logout-btn {
+    position: absolute;
+    top: 25px;
+    left: 30px;
+    background: var(--text-muted);
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 13px;
+    z-index: 2;
+}
+
+.logout-btn:hover {
+    background: var(--danger);
+}
+
 /* KPIs */
 .kpi-grid { display: flex; gap: 20px; max-width: 1200px; margin: 0 auto 30px; }
 .kpi-card {

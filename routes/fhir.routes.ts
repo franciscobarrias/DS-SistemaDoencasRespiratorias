@@ -5,7 +5,9 @@ const { autenticar } = require('../middleware/auth.middleware');
 
 routes.get('/observations', autenticar, async (req: any, res: any) => {
     try {
-        const code = typeof req.query['code'] === 'string' ? req.query['code'] : '8310-5';
+        const code = typeof req.query['code'] === 'string' && req.query['code'].trim()
+            ? req.query['code'].trim()
+            : undefined;
         const patient = typeof req.query['patient'] === 'string' ? req.query['patient'] : undefined;
 
         const observations = await getObservationsFromFhir(code, patient);

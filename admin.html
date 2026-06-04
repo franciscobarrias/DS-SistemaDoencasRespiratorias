@@ -211,7 +211,7 @@
         .logout-btn {
             position: absolute;
             top: 20px;
-            right: 20px;
+            left: 20px;
             background: var(--text-muted);
             color: white;
             border: none;
@@ -542,7 +542,11 @@
             </div>
 
             <div class="admin-card">
-                <h3>Lista de Doentes Registados</h3>
+                <div style="display:flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap;">
+                    <h3 style="margin-bottom: 0;">Lista de Doentes Registados</h3>
+                    <button id="btn-sync-fhir-admin" class="btn-cyan" style="background:#0891b2; padding: 10px 14px; border:none; border-radius:6px; cursor:pointer; font-weight:600; color:white;">↻ Sincronizar FHIR</button>
+                </div>
+                <div id="alert-sync-fhir" class="alert-message" style="margin-top: 12px;"></div>
                 <input type="text" class="search-bar" id="search-doentes" placeholder="🔍 Procurar por nome ou email...">
                 
                 <div class="table-container">
@@ -714,9 +718,13 @@
         // ==========================================
         async function carregarMedicos() {
             try {
-                const response = await fetch('/medicos');
+                const response = await fetch(`/medicos?t=${Date.now()}`, { cache: 'no-store' });
                 if (!response.ok) throw new Error('Erro ao carregar médicos');
-                medicosData = await response.json();
+                medicosData = (await response.json()).map(m => ({
+                    ...m,
+                    telefone: m.telefone || '-',
+                    status: m.status || 'Ativo'
+                }));
                 renderMedicosTable(document.getElementById('search-medicos')?.value.trim().toLowerCase() || '');
                 carregarDropdownMedicos(); // Atualizar dropdown após carregar
             } catch (err) {
@@ -727,7 +735,7 @@
 
         async function carregarDoentes() {
             try {
-                const response = await fetch('/utentes');
+                const response = await fetch(`/utentes?t=${Date.now()}`, { cache: 'no-store' });
                 if (!response.ok) throw new Error('Erro ao carregar doentes');
                 const allUtentes = await response.json();
                 
@@ -737,6 +745,7 @@
                     nome: u.nome,
                     email: u.email || '-',
                     telefone: u.telefone || '-',
+                    numeroIdentidade: u.numero_identidade || u.identidade || u.n_identidade || '-',
                     medicoNome: (medicosData.find(m => Number(m.id) === Number(u.medico_id)) || {}).nome || (u.medico_id ? `ID ${u.medico_id}` : '-'),
                     medicoId: u.medico_id,
                     status: 'Ativo'
@@ -865,6 +874,7 @@
             const email = document.getElementById('doe-email').value;
             const nascimento = document.getElementById('doe-nascimento').value;
             const telefone = document.getElementById('doe-telefone').value;
+            const numeroIdentidade = document.getElementById('doe-identidade').value;
             const medicoId = document.getElementById('doe-medico').value;
             const password = document.getElementById('doe-password').value;
 
@@ -881,6 +891,7 @@
                     nome, 
                     email, 
                     telefone,
+                    numero_identidade: numeroIdentidade,
                     medico_id: Number(medicoId)
                 })
             })
@@ -907,6 +918,59 @@
             document.getElementById('doe-identidade').value = '';
             document.getElementById('doe-medico').value = '';
             document.getElementById('doe-password').value = '';
+        }
+
+        async function sincronizarFhirAdmin() {
+            const btn = document.getElementById('btn-sync-fhir-admin');
+            const alertBox = document.getElementById('alert-sync-fhir');
+            if (btn) {
+                btn.disabled = true;
+                btn.textContent = 'A sincronizar...';
+                btn.style.opacity = '0.7';
+            }
+            if (alertBox) {
+                alertBox.className = 'alert-message';
+                alertBox.style.display = 'none';
+            }
+
+            try {
+                const response = await fetch('/utentes/sync/fhir-all', { method: 'POST' });
+                const resultado = await response.json().catch(() => ({}));
+
+                if (!response.ok) {
+                    throw new Error(resultado.error || response.statusText);
+                }
+
+                await carregarMedicos();
+                await carregarDoentes();
+
+                if (btn) btn.textContent = 'Sincronização concluída';
+                if (alertBox) {
+                    alertBox.textContent = `Sincronização concluída: ${resultado.imported || 0} utentes importados, ${resultado.errors || 0} erros.`;
+                    alertBox.className = 'alert-message alert-success';
+                    alertBox.style.display = 'block';
+                }
+
+                setTimeout(() => {
+                    if (btn) {
+                        btn.textContent = '↻ Sincronizar FHIR';
+                        btn.disabled = false;
+                        btn.style.opacity = '';
+                    }
+                }, 1500);
+            } catch (err) {
+                console.error('Erro ao sincronizar FHIR no admin:', err);
+                if (alertBox) {
+                    alertBox.textContent = `Erro ao sincronizar FHIR: ${err.message}`;
+                    alertBox.className = 'alert-message alert-error';
+                    alertBox.style.display = 'block';
+                }
+                if (btn) {
+                    btn.textContent = '↻ Sincronizar FHIR';
+                    btn.disabled = false;
+                    btn.style.opacity = '';
+                }
+            }
         }
 
         function removerMedico(id) {
@@ -1201,6 +1265,11 @@
             // Carregar dados do servidor na ordem correta para ter nomes de médicos nos doentes
             await carregarMedicos();
             await carregarDoentes();
+
+            const btnSyncFhirAdmin = document.getElementById('btn-sync-fhir-admin');
+            if (btnSyncFhirAdmin) {
+                btnSyncFhirAdmin.addEventListener('click', sincronizarFhirAdmin);
+            }
 
             const searchMedicosInput = document.getElementById('search-medicos');
             if (searchMedicosInput) {

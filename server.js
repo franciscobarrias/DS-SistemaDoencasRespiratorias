@@ -18,6 +18,11 @@ app.get('/sintomas', clinicaController.getAllSintomas);
 app.get('/sintomas/:utente_id', clinicaController.getSintomas);
 
 
+app.get('/', (req, res) => {
+    res.redirect('/login.html');
+});
+
+
 app.delete('/sintomas/:id', clinicaController.deleteSintoma);
 
 

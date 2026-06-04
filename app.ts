@@ -158,7 +158,7 @@ async function carregarUtentes() {
 
                     <div style="display: flex; gap: 5px; flex-wrap: wrap; justify-content: flex-end;">
                         ${utente.fhir_id ? `<button class="btn-green" style="padding: 6px 10px; font-size: 12px;" onclick="sincronizarObservacoesFhir(${utente.id})">🔄 Obs.</button>` : ''}
-                        <button class="btn-blue" onclick="abrirFichaClinica(${utente.id}, '${utente.nome.replace(/'/g, "\\'")}', '${escaparHTML(utente.email)}', '${escaparHTML(utente.telefone)}')">👁️ Ver Ficha</button>
+                        <button class="btn-blue btn-ver-ficha" data-utente-id="${utente.id}" data-utente-nome="${utente.nome.replace(/'/g, "\\'")}" data-utente-email="${escaparHTML(utente.email)}" data-utente-tel="${escaparHTML(utente.telefone)}">👁️ Ver Ficha</button>
                         <button class="btn-red" style="padding:6px 10px; font-size:12px;" onclick="eliminarUtente(${utente.id}, '${utente.nome.replace(/'/g, "\\'")}')">🗑️ Eliminar</button>
                     </div>
 
@@ -167,7 +167,23 @@ async function carregarUtentes() {
             `;
 
             lista.appendChild(item);
-            
+
+            // Bind addEventListener ao botão Ver Ficha (substitui onclick inline)
+            const btnVer = item.querySelector('button.btn-ver-ficha') as HTMLButtonElement | null;
+            if (btnVer) {
+                btnVer.addEventListener('click', async () => {
+                    try {
+                        const id = Number(btnVer.getAttribute('data-utente-id'));
+                        const nome = btnVer.getAttribute('data-utente-nome') || '';
+                        const email = btnVer.getAttribute('data-utente-email') || '';
+                        const tel = btnVer.getAttribute('data-utente-tel') || '';
+                        await abrirFichaClinica(id, nome, email, tel);
+                    } catch (e) {
+                        console.error('Erro ao abrir ficha via event listener:', e);
+                    }
+                });
+            }
+
             // Carregar observações automaticamente se tem FHIR ID
             if (utente.fhir_id) {
                 carregarObservacoesFhirDoUtente(utente.id);
@@ -327,6 +343,9 @@ async function abrirFichaClinica(id, nome, email, telefone) {
                     icone = '🌡️';
                     cor = '#ef4444';
                 } else if (obs.tipo === 'medicamento') {
+                    if (obs.valueQuantity?.value !== undefined && obs.valueQuantity?.value !== null) {
+                        return `${obs.valueQuantity.value} ${obs.valueQuantity.unit || obs.valueQuantity.code || ''}`.trim();
+                    }
                     icone = '💊';
                     cor = '#8b5cf6';
                 } else if (obs.tipo === 'pressao_sistolica' || obs.tipo === 'pressao_diastolica') {
@@ -1018,6 +1037,12 @@ async function sincronizarObservacoesFhir(utenteId) {
 
 async function carregarObservacoesFhirDoUtente(utenteId) {
     try {
+        try {
+            await fetch(`${API_URL}/utentes/${utenteId}/sincronizar-observacoes-fhir`, { method: 'POST' });
+        } catch (syncErr) {
+            console.warn(`[Obs Load] Sincronização silenciosa falhou para utente ${utenteId}:`, syncErr);
+        }
+
         const res = await fetch(`${API_URL}/utentes/${utenteId}/observacoes-fhir`);
         const observacoes = await res.json();
 
@@ -1040,6 +1065,15 @@ async function carregarObservacoesFhirDoUtente(utenteId) {
             const tipoIcon = obs.tipo === 'temperatura' ? '🌡️' : 
                             obs.tipo === 'medicamento' ? '💊' :
                             obs.tipo === 'pressao_sistolica' || obs.tipo === 'pressao_diastolica' ? '❤️' : '📊';
+            const valorFormatado = obs.valor !== undefined && obs.valor !== null && String(obs.valor).trim() !== ''
+                ? String(obs.valor)
+                : obs.valueQuantity?.value !== undefined && obs.valueQuantity?.value !== null
+                    ? String(obs.valueQuantity.value)
+                    : typeof obs.valueString === 'string' && obs.valueString.trim()
+                        ? obs.valueString
+                        : obs.valueCodeableConcept?.text || obs.valueCodeableConcept?.coding?.[0]?.display || '';
+            const unidadeFormatada = obs.unidade || obs.unit || obs.valueQuantity?.unit || obs.valueQuantity?.code || '';
+            const dataFormatada = obs.data_efetiva || obs.effectiveDateTime || obs.effectiveDateTimeRaw || '';
 
             item.style.cssText = 'padding: 8px; border-bottom: 1px solid #e5e7eb; font-size: 12px;';
             item.innerHTML = `
@@ -1047,7 +1081,7 @@ async function carregarObservacoesFhirDoUtente(utenteId) {
                     <strong>${tipoIcon} ${escaparHTML(obs.display || obs.codigo)}</strong>
                 </div>
                 <div style="color: #6b7280; margin-top: 3px;">
-                    ${obs.valor} ${obs.unidade} | ${new Date(obs.data_efetiva).toLocaleDateString('pt-PT')}
+                    ${escaparHTML(String(valorFormatado))} ${escaparHTML(String(unidadeFormatada))} | ${dataFormatada ? new Date(dataFormatada).toLocaleDateString('pt-PT') : ''}
                 </div>
             `;
             lista.appendChild(item);
@@ -1082,6 +1116,10 @@ async function carregarObservacoesFHIR() {
 
         const res = await fetch(`${API_URL}/fhir/observations`);
 
+        if (!res.ok) {
+            throw new Error(`HTTP ${res.status}`);
+        }
+
         const observacoes = await res.json();
 
 
@@ -1106,6 +1144,26 @@ async function carregarObservacoesFHIR() {
 
             const corStatus = obs.status === 'final' ? '#10b981' : '#f59e0b';
 
+            const tipoObs = obs.display || obs.codeText || obs.codeDisplay || obs.code || 'Observação';
+            const valorObs = (() => {
+                if (obs.value !== undefined && obs.value !== null && String(obs.value).trim() !== '') {
+                    return `${obs.value} ${obs.unit || ''}`.trim();
+                }
+                if (typeof obs.valueString === 'string' && obs.valueString.trim()) {
+                    return obs.valueString;
+                }
+                if (obs.valueCodeableConcept?.text) {
+                    return obs.valueCodeableConcept.text;
+                }
+                if (obs.valueCodeableConcept?.coding?.[0]?.display) {
+                    return obs.valueCodeableConcept.coding[0].display;
+                }
+                return 'Sem valor';
+            })();
+            const dataObs = obs.effectiveDateTime || obs.effectiveDateTimeRaw || '';
+            const pacienteObs = obs.patientName || obs.subject || '';
+            const estadoObs = obs.status || 'desconhecido';
+
 
 
             item.innerHTML = `
@@ -1114,9 +1172,9 @@ async function carregarObservacoesFHIR() {
 
                     <div>
 
-                        <strong>${escaparHTML(obs.display || obs.code)}</strong>
+                        <strong>${escaparHTML(tipoObs)}</strong>
 
-                        <span class="badge" style="background-color: ${corStatus}; color: white; margin-left: 8px;">${obs.status}</span>
+                        <span class="badge" style="background-color: ${corStatus}; color: white; margin-left: 8px;">${escaparHTML(estadoObs)}</span>
 
                     </div>
 
@@ -1124,13 +1182,13 @@ async function carregarObservacoesFHIR() {
 
                 <div style="color: var(--text-muted); font-size: 13px; margin-top: 5px;">
 
-                    📊 <strong>Valor:</strong> ${obs.value} ${escaparHTML(obs.unit)} | 📅 ${obs.effectiveDateTime}
+                    📊 <strong>Valor:</strong> ${escaparHTML(String(valorObs))} | 📅 ${escaparHTML(String(dataObs))}
 
                 </div>
 
                 <div style="color: var(--text-muted); font-size: 12px; margin-top: 3px;">
 
-                    🔗 Paciente: ${escaparHTML(obs.patientName || obs.subject)}
+                    🔗 Paciente: ${escaparHTML(String(pacienteObs))}
 
                 </div>
 

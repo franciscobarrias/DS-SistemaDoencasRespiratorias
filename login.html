@@ -7,38 +7,83 @@
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
   <style>
+    html, body {
+      font-family: 'Poppins', sans-serif;
+    }
+
+    body {
+      min-height: 100vh;
+      background: var(--bg);
+      padding: 0 20px 40px;
+    }
+
     .login-wrap {
-      max-width: 900px;
+      max-width: 920px;
       margin: 0 auto;
-      padding: 20px 0 40px;
+      padding: 22px 0 48px;
+    }
+
+    .login-hero {
+      background: linear-gradient(135deg, var(--primary), var(--secondary));
+      color: white;
+      padding: 24px 28px;
+      border-radius: 14px;
+      margin-bottom: 24px;
+      box-shadow: 0 10px 20px -12px rgba(30, 58, 138, 0.5);
+    }
+
+    .login-hero h2 {
+      margin: 0 0 8px 0;
+      font-size: 24px;
+      font-weight: 700;
+      color: white;
+    }
+
+    .login-hero p {
+      margin: 0;
+      font-size: 14px;
+      opacity: 0.92;
     }
 
     .login-grid {
-      display: grid;
-      grid-template-columns: minmax(320px, 500px);
+      width: 100%;
+      display: flex;
       justify-content: center;
     }
 
     .login-card {
+      position: relative;
+      overflow: hidden;
       background: var(--card-bg);
-      border-radius: 16px;
-      padding: 32px;
-      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-      border: 1px solid rgba(0, 0, 0, 0.05);
+      border-radius: 14px;
+      padding: 34px;
+      width: 100%;
+      max-width: 740px;
+      box-shadow: 0 6px 18px -8px rgba(15, 23, 42, 0.16);
+      border: 1px solid rgba(229, 231, 235, 1);
+    }
+
+    .login-card::before {
+      content: "";
+      position: absolute;
+      inset: 0 0 auto 0;
+      height: 5px;
+      background: linear-gradient(90deg, var(--primary), var(--secondary));
     }
 
     .login-card h2 {
-      font-size: 24px;
-      margin-bottom: 8px;
-      color: var(--primary);
+      font-size: 26px;
+      margin-bottom: 10px;
+      color: var(--text-main);
       font-weight: 700;
+      line-height: 1.2;
     }
 
     .login-subtitle {
       color: var(--text-muted);
       font-size: 14px;
-      margin-bottom: 24px;
-      line-height: 1.5;
+      margin-bottom: 28px;
+      line-height: 1.6;
     }
 
     .login-note {
@@ -46,8 +91,8 @@
       font-size: 12px;
       color: var(--text-muted);
       text-align: center;
-      border-top: 1px solid var(--bg);
-      padding-top: 12px;
+      border-top: 1px solid rgba(148, 163, 184, 0.2);
+      padding-top: 14px;
     }
 
     /* Estilos para seleção de tipo de utilizador */
@@ -61,43 +106,47 @@
 
     .user-type-buttons {
       display: grid;
-      grid-template-columns: 1fr;
-      gap: 12px;
+      grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+      gap: 14px;
       margin-bottom: 24px;
     }
 
     .user-type-btn {
-      padding: 16px;
-      border: 2px solid var(--bg);
-      border-radius: 12px;
+      min-height: 150px;
+      padding: 22px 18px;
+      border: 2px solid #e5e7eb;
+      border-radius: 14px;
       background: var(--card-bg);
       cursor: pointer;
-      transition: all 0.3s ease;
-      text-align: left;
+      transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease, background-color 0.2s ease;
+      text-align: center;
       font-size: 16px;
       font-weight: 600;
       color: var(--text-main);
       display: flex;
+      flex-direction: column;
       align-items: center;
-      gap: 12px;
+      justify-content: center;
+      gap: 10px;
     }
 
     .user-type-btn:hover {
       border-color: var(--secondary);
-      background: rgba(59, 130, 246, 0.05);
+      background: #eff6ff;
       transform: translateY(-2px);
-      box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15);
+      box-shadow: 0 4px 12px rgba(59, 130, 246, 0.18);
     }
 
     .user-type-btn.selected {
       border-color: var(--secondary);
-      background: rgba(59, 130, 246, 0.1);
+      background: #eff6ff;
       color: var(--secondary);
     }
 
     .user-type-icon {
-      font-size: 24px;
-      min-width: 30px;
+      font-size: 36px;
+      min-width: 0;
+      line-height: 1;
     }
 
     .user-type-content {
@@ -108,10 +157,11 @@
       display: block;
       color: var(--text-main);
       margin-bottom: 4px;
+      font-size: 18px;
     }
 
     .user-type-content p {
-      font-size: 12px;
+      font-size: 13px;
       color: var(--text-muted);
       margin: 0;
       font-weight: 400;
@@ -139,6 +189,7 @@
       align-items: center;
       gap: 4px;
       transition: all 0.2s ease;
+      margin-bottom: 18px;
     }
 
     .form-back-btn:hover {
@@ -154,9 +205,9 @@
     }
 
     .form-group input {
-      padding: 12px;
-      border: 1px solid var(--bg);
-      border-radius: 8px;
+      padding: 13px 14px;
+      border: 1px solid rgba(148, 163, 184, 0.28);
+      border-radius: 10px;
       font-size: 14px;
       background: var(--card-bg);
       color: var(--text-main);
@@ -174,14 +225,38 @@
     }
 
     .btn-blue {
-      padding: 12px !important;
+      padding: 13px !important;
       font-size: 15px !important;
-      margin-top: 4px;
+      margin-top: 6px;
       font-weight: 600;
+      border-radius: 10px;
     }
 
     .header-content {
       text-align: center;
+    }
+
+    @media (max-width: 640px) {
+      .login-wrap {
+        padding: 18px 0 40px;
+      }
+
+      .login-hero {
+        padding: 20px;
+      }
+
+      .login-card {
+        padding: 26px 18px;
+        border-radius: 16px;
+      }
+
+      .login-card h2 {
+        font-size: 22px;
+      }
+
+      .user-type-buttons {
+        grid-template-columns: 1fr;
+      }
     }
   </style>
 </head>
@@ -190,14 +265,19 @@
     <div style="display:flex; gap:10px; align-items:center; justify-content: space-between; max-width: 1200px; margin: 0 auto;">
       <button class="theme-toggle" onclick="toggleTheme()" id="btn-theme">🌙</button>
       <div class="header-content" style="flex: 1;">
-        <h1>Clínica SaudINOB</h1>
-        <p>Painel de Monitorização Respiratória</p>
+        <h1>SaudINOB</h1>
+        <p>Portal de Monitorização de Saúde</p>
       </div>
       <div style="width: 50px;"></div>
     </div>
   </header>
 
   <main class="login-wrap">
+    <section class="login-hero">
+      <h2>Bem-vindo ao acesso clínico</h2>
+      <p>Escolha o seu perfil para continuar com o login.</p>
+    </section>
+
     <div class="login-grid">
       <section class="login-card">
         <!-- Seleção de Tipo de Utilizador -->
@@ -238,7 +318,7 @@
           <h2 id="loginTitle">Iniciar Sessão</h2>
           <p class="login-subtitle" id="loginSubtitle">Autentique-se para aceder.</p>
 
-          <form method="post" action="/" class="form-group" id="authForm">
+          <form method="post" action="/login.html" class="form-group" id="authForm">
             <input type="hidden" name="userType" id="userTypeInput" />
             <input name="username" placeholder="Utilizador" autocomplete="username" required />
             <input name="password" type="password" placeholder="Password" autocomplete="current-password" required />
@@ -290,9 +370,9 @@
       // Guardar tipo de utilizador
       document.getElementById('userTypeInput').value = type;
 
-      // Atualizar URL ou ação do formulário conforme necessário
+      // Manter o post na rota canónica de login
       const form = document.getElementById('authForm');
-      form.action = `/?type=${type}`;
+      form.action = '/login.html';
     }
 
     function backToUserType() {

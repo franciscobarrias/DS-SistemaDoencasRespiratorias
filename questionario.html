@@ -372,6 +372,7 @@
                     resultDiv.innerHTML = `Erro: ${dados.erro || 'Falha ao processar.'} 
                                            <br><button class="btn-reset" onclick="limparFormulario()">Tentar Novamente</button>`;
                 } else {
+                        localStorage.setItem('caratLastSubmissionAt', String(Date.now()));
                     if (dados.score_total < 24) { 
                         resultDiv.style.backgroundColor = '#fffbeb'; 
                         resultDiv.style.color = '#b45309'; 

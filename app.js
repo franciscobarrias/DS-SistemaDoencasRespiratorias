@@ -1,69 +1,40 @@
 const API_URL = 'http://localhost:3000';
-
 let graficoSintomasAtivo = null;
-
 let graficoHistoricoAtivo = null;
-
-let utenteFichaAtualId = null; // 🛡️ NOVA: Guarda o ID do utente aberto no modal para a Terapêutica
-
-
-
+let utenteFichaAtualId = null;
+const getInputValue = (id) => {
+    return document.getElementById(id)?.value ?? '';
+};
+const setInputValue = (id, value) => {
+    const input = document.getElementById(id);
+    if (input)
+        input.value = value;
+};
 function escaparHTML(texto) {
-
-    if (!texto) return '';
-
+    if (!texto)
+        return '';
     const div = document.createElement('div');
-
     div.textContent = texto;
-
     return div.innerHTML;
-
 }
-
-
-
 async function carregarAlertas() {
-
     const lista = document.getElementById('lista-alertas');
-
     const kpiAlertas = document.getElementById('kpi-alertas');
-
-    if (!lista) return;
-
-
-
+    if (!lista)
+        return;
     lista.innerHTML = '<li class="empty-state">A carregar alertas...</li>';
-
-
-
     try {
-
         const res = await fetch(`${API_URL}/medico/alertas`);
-
         const alertas = await res.json();
-
-
-
-        if (kpiAlertas) kpiAlertas.innerText = alertas.length;
-
-
-
+        if (kpiAlertas)
+            kpiAlertas.innerText = alertas.length;
         lista.innerHTML = '';
-
         if (alertas.length === 0) {
-
             lista.innerHTML = '<li class="empty-state">✅ Sem alertas ativos.</li>';
-
             return;
-
         }
-
-
-
         alertas.forEach(alerta => {
-
             const item = document.createElement('li');
-
             item.innerHTML = `
 
                 <div style="display:flex; justify-content: space-between; align-items: center;">
@@ -83,157 +54,123 @@ async function carregarAlertas() {
                 <button class="btn-green full-width" onclick="resolverAlerta(${alerta.id})">✅ Marcar como Resolvido</button>
 
             `;
-
             lista.appendChild(item);
-
         });
-
-    } catch (err) {
-
-        lista.innerHTML = '<li class="empty-state">Erro de ligação à API.</li>';
-
     }
-
+    catch (err) {
+        lista.innerHTML = '<li class="empty-state">Erro de ligação à API.</li>';
+    }
 }
-
-
-
 async function carregarUtentes() {
-
     const lista = document.getElementById('lista-utentes');
-
     const kpiUtentes = document.getElementById('kpi-utentes');
-
-    if (!lista) return;
-
-
-
+    if (!lista)
+        return;
     try {
-
         const res = await fetch(`${API_URL}/utentes?t=${Date.now()}`);
-
         const dados = await res.json();
-
-
-
-        if (kpiUtentes) kpiUtentes.innerText = dados.length;
-
-
-
+        if (kpiUtentes)
+            kpiUtentes.innerText = dados.length;
         lista.innerHTML = '';
-
         dados.forEach(utente => {
-
             const item = document.createElement('li');
-
             const fhirBadge = utente.fhir_id
                 ? '<span class="badge" style="background:#10b981; color:white; margin-left:8px;">FHIR ligado</span>'
                 : '<span class="badge" style="background:#6b7280; color:white; margin-left:8px;">FHIR por sincronizar</span>';
-
             item.innerHTML = `
 
-                <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+                <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; gap: 10px;">
 
-                    <div>
+                    <div style="flex: 1;">
 
                         <strong>${escaparHTML(utente.nome)} (ID: ${utente.id})</strong>${fhirBadge} <br>
 
                         <span style="color:var(--text-muted); font-size:13px;">📧 ${escaparHTML(utente.email)} | 📞 ${escaparHTML(utente.telefone)}</span>
 
+                        <!-- Container de observações -->
+                        <div id="observacoes-fhir-${utente.id}" style="margin-top: 8px; padding: 8px; background: #f3f4f6; border-radius: 4px; font-size: 12px;"></div>
+
                     </div>
 
-                    <button class="btn-blue" onclick="abrirFichaClinica(${utente.id}, '${utente.nome.replace(/'/g, "\\'")}', '${escaparHTML(utente.email)}', '${escaparHTML(utente.telefone)}')">👁️ Ver Ficha</button>
+                    <div style="display: flex; gap: 5px; flex-wrap: wrap; justify-content: flex-end;">
+                        ${utente.fhir_id ? `<button class="btn-green" style="padding: 6px 10px; font-size: 12px;" onclick="sincronizarObservacoesFhir(${utente.id})">🔄 Obs.</button>` : ''}
+                        <button class="btn-blue btn-ver-ficha" data-utente-id="${utente.id}" data-utente-nome="${utente.nome.replace(/'/g, "\\'")}" data-utente-email="${escaparHTML(utente.email)}" data-utente-tel="${escaparHTML(utente.telefone)}">👁️ Ver Ficha</button>
+                        <button class="btn-red" style="padding:6px 10px; font-size:12px;" onclick="eliminarUtente(${utente.id}, '${utente.nome.replace(/'/g, "\\'")}')">🗑️ Eliminar</button>
+                    </div>
 
                 </div>
 
             `;
-
             lista.appendChild(item);
-
+            // Bind addEventListener ao botão Ver Ficha (substitui onclick inline)
+            const btnVer = item.querySelector('button.btn-ver-ficha');
+            if (btnVer) {
+                btnVer.addEventListener('click', async () => {
+                    try {
+                        const id = Number(btnVer.getAttribute('data-utente-id'));
+                        const nome = btnVer.getAttribute('data-utente-nome') || '';
+                        const email = btnVer.getAttribute('data-utente-email') || '';
+                        const tel = btnVer.getAttribute('data-utente-tel') || '';
+                        await abrirFichaClinica(id, nome, email, tel);
+                    }
+                    catch (e) {
+                        console.error('Erro ao abrir ficha via event listener:', e);
+                    }
+                });
+            }
+            // Carregar observações automaticamente se tem FHIR ID
+            if (utente.fhir_id) {
+                carregarObservacoesFhirDoUtente(utente.id);
+            }
         });
-
-    } catch (err) {
-
-        console.error("Erro ao carregar utentes:", err);
-
     }
-
+    catch (err) {
+        console.error("Erro ao carregar utentes:", err);
+    }
 }
-
-
-
-// ==========================================
-
-// FICHA CLÍNICA INDIVIDUAL E TERAPÊUTICA
-
-// ==========================================
-
 async function abrirFichaClinica(id, nome, email, telefone) {
-
     utenteFichaAtualId = id; // Memoriza o utente atual para associar os medicamentos corretos
-
     document.getElementById('prof-nome').innerText = nome;
-
     document.getElementById('prof-contactos').innerText = `📧 ${email} | 📞 ${telefone} | Módulo de Análise ID: ${id}`;
-
-   
-
     const listaSintomas = document.getElementById('prof-lista-sintomas');
-
     const listaCarat = document.getElementById('prof-lista-carat');
-
-    const listaTerapeutica = document.getElementById('prof-lista-terapeutica'); // Nova lista
-
-   
-
+    const listaTerapeutica = document.getElementById('prof-lista-terapeutica');
+    const listaObservacoesFhir = document.getElementById('prof-lista-observacoes-fhir');
+    const listaTemperaturas = document.getElementById('prof-lista-temperaturas');
     listaSintomas.innerHTML = '<li>A carregar sintomas...</li>';
-
     listaCarat.innerHTML = '<li>A carregar avaliações...</li>';
-
     listaTerapeutica.innerHTML = '<li>A carregar terapêutica...</li>';
-
-   
-
+    listaObservacoesFhir.innerHTML = '<li>A carregar observações FHIR...</li>';
+    if (listaTemperaturas)
+        listaTemperaturas.innerHTML = '<li>A carregar temperaturas...</li>';
     document.getElementById('modal-perfil').style.display = 'flex';
-
-
-
+    const tempDataInput = document.getElementById('input-temp-data');
+    if (tempDataInput) {
+        const now = new Date();
+        now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+        tempDataInput.value = now.toISOString().slice(0, 16);
+    }
     try {
-
-        // Dispara os três pedidos HTTP em paralelo
-
-        const [resSintomas, resHistorico, resTerap] = await Promise.all([
-
+        // Dispara os pedidos HTTP em paralelo
+        const [resSintomas, resHistorico, resTerap, resObsFhir, resTemps] = await Promise.all([
             fetch(`${API_URL}/sintomas/${id}`),
-
             fetch(`${API_URL}/utentes/${id}/history`),
-
-            fetch(`${API_URL}/utentes/${id}/terapeutica`)
-
+            fetch(`${API_URL}/utentes/${id}/terapeutica`),
+            fetch(`${API_URL}/utentes/${id}/observacoes-fhir`),
+            fetch(`${API_URL}/utentes/${id}/temperaturas`)
         ]);
-
-
-
         const sintomas = await resSintomas.json();
-
         const historico = await resHistorico.json();
-
         const terapeutica = await resTerap.json();
-
-
-
+        const observacoesFhir = await resObsFhir.json();
+        const temperaturas = await resTemps.json();
         // ---- Renderizar Terapêutica ----
-
         listaTerapeutica.innerHTML = '';
-
         if (terapeutica.length === 0) {
-
             listaTerapeutica.innerHTML = '<li style="color:var(--text-muted); font-size:13px; grid-column: span 2;">Nenhuma terapêutica registada.</li>';
-
-        } else {
-
+        }
+        else {
             terapeutica.forEach(med => {
-
                 listaTerapeutica.innerHTML += `
 
                     <li style="background: white; border: 1px solid #e5e7eb; padding: 10px; border-radius: 6px; display: flex; flex-direction: column;">
@@ -243,27 +180,73 @@ async function abrirFichaClinica(id, nome, email, telefone) {
                         <span style="font-size: 12px; color: var(--text-muted); margin-top: 4px;">🔄 Posologia: ${escaparHTML(med.posologia)}</span>
 
                     </li>`;
-
             });
-
         }
+        // ---- Renderizar Temperaturas Manuais ----
+        if (listaTemperaturas) {
+            listaTemperaturas.innerHTML = '';
+            if (!Array.isArray(temperaturas) || temperaturas.length === 0) {
+                listaTemperaturas.innerHTML = '<li style="color:var(--text-muted); font-size:13px;">Sem temperaturas registadas manualmente.</li>';
+            }
+            else {
+                temperaturas.forEach((t) => {
+                    const dataFormatada = new Date(t.data_efetiva).toLocaleString('pt-PT');
+                    listaTemperaturas.innerHTML += `
+                        <li style="padding: 8px 0; border-bottom: 1px dashed #e5e7eb; font-size: 13px; display:flex; justify-content:space-between; gap:8px;">
+                            <span>📅 ${dataFormatada}</span>
+                            <strong style="color:#ef4444;">🌡️ ${Number(t.valor).toFixed(1)} ${escaparHTML(t.unidade || 'ºC')}</strong>
+                        </li>`;
+                });
+            }
+        }
+        // ---- Renderizar Observações FHIR ----
+        listaObservacoesFhir.innerHTML = '';
+        if (!Array.isArray(observacoesFhir) || observacoesFhir.length === 0) {
+            listaObservacoesFhir.innerHTML = '<li style="color:var(--text-muted); font-size:13px; grid-column: span 2;">Nenhuma observação FHIR sincronizada.</li>';
+        }
+        else {
+            observacoesFhir.forEach(obs => {
+                // Selecionar ícone e cor baseado no tipo
+                let icone = '📊';
+                let cor = '#0891b2';
+                if (obs.tipo === 'temperatura') {
+                    icone = '🌡️';
+                    cor = '#ef4444';
+                }
+                else if (obs.tipo === 'medicamento') {
+                    if (obs.valueQuantity?.value !== undefined && obs.valueQuantity?.value !== null) {
+                        return `${obs.valueQuantity.value} ${obs.valueQuantity.unit || obs.valueQuantity.code || ''}`.trim();
+                    }
+                    icone = '💊';
+                    cor = '#8b5cf6';
+                }
+                else if (obs.tipo === 'pressao_sistolica' || obs.tipo === 'pressao_diastolica') {
+                    icone = '❤️';
+                    cor = '#ec4899';
+                }
+                const dataFormatada = new Date(obs.data_efetiva).toLocaleDateString('pt-PT');
+                listaObservacoesFhir.innerHTML += `
 
+                    <li style="background: white; border: 1px solid #e5e7eb; border-left: 4px solid ${cor}; padding: 10px; border-radius: 6px; display: flex; flex-direction: column;">
 
+                        <strong style="color: ${cor}; font-size: 14px;">${icone} ${escaparHTML(obs.display || obs.codigo)}</strong>
 
+                        <span style="font-size: 13px; color: var(--text-muted); margin-top: 4px;">📈 Valor: <strong>${obs.valor}</strong> ${escaparHTML(obs.unidade)}</span>
+
+                        <span style="font-size: 12px; color: var(--text-muted); margin-top: 2px;">📅 ${dataFormatada}</span>
+
+                    </li>`;
+            });
+        }
         // ---- Renderizar Sintomas Individuais ----
-
         listaSintomas.innerHTML = '';
-
         if (sintomas.length === 0) {
-
             listaSintomas.innerHTML = '<li style="color:var(--text-muted); font-size:13px;">Nenhum sintoma ativo reportado.</li>';
-
-        } else {
-
+        }
+        else {
             sintomas.forEach(s => {
-
-                const corBadge = s.severidade === 'Grave' ? '#ef4444' : (s.severidade === 'Moderada' ? '#f59e0b' : '#10b981');
-
+                const sevForColor = (s.severidade === 'Moderada') ? 'Normal' : s.severidade;
+                const corBadge = sevForColor === 'Grave' ? '#ef4444' : (sevForColor === 'Normal' ? '#f59e0b' : '#10b981');
                 listaSintomas.innerHTML += `
 
                     <li style="padding: 8px 0; border-bottom: 1px dashed #e5e7eb; font-size: 13px;">
@@ -273,277 +256,190 @@ async function abrirFichaClinica(id, nome, email, telefone) {
                         "${escaparHTML(s.descricao)}"
 
                     </li>`;
-
             });
-
         }
-
-
-
         // ---- Renderizar Histórico e Preparar o Gráfico de Linhas ----
-
         listaCarat.innerHTML = '';
-
         const labelsDatas = [];
-
         const dadosScores = [];
-
-
-
         if (historico.length === 0) {
-
             listaCarat.innerHTML = '<li style="color:var(--text-muted); font-size:13px;">Nenhum teste CARAT realizado.</li>';
-
             gerarGraficoEvolucao([], []);
-
-        } else {
-
+        }
+        else {
             historico.forEach(h => {
-
                 const dataFormatada = new Date(h.data).toLocaleDateString('pt-PT');
-
                 labelsDatas.push(dataFormatada);
-
                 dadosScores.push(h.score_total);
-
-
-
                 const corScore = h.score_total < 24 ? 'color:#ef4444' : 'color:#10b981';
-
                 listaCarat.innerHTML += `
 
                     <li style="padding: 6px 0; border-bottom: 1px dashed #e5e7eb; font-size: 13px; display:flex; justify-content:space-between;">
 
-                        <span> ${dataFormatada}</span>
+                        <span>📅 ${dataFormatada}</span>
 
                         <strong style="${corScore}">Score: ${h.score_total}/30</strong>
 
                     </li>`;
-
             });
-
-           
-
             gerarGraficoEvolucao(labelsDatas, dadosScores);
-
         }
-
-
-
-    } catch (err) {
-
+    }
+    catch (err) {
         console.error("Erro ao carregar Ficha Clínica:", err);
-
         listaSintomas.innerHTML = '<li>Erro ao ligar ao servidor.</li>';
-
         listaCarat.innerHTML = '<li>Erro ao ligar ao servidor.</li>';
-
         listaTerapeutica.innerHTML = '<li>Erro ao ligar ao servidor.</li>';
-
     }
-
 }
-
-
-
-function fecharFichaClinica() {
-
-    document.getElementById('modal-perfil').style.display = 'none';
-
-}
-
-
-
-function gerarGraficoEvolucao(labels, dados) {
-
-    const ctx = document.getElementById('graficoHistoricoUtente');
-
-    if (!ctx) return;
-
-
-
-    if (graficoHistoricoAtivo) graficoHistoricoAtivo.destroy();
-
-
-
-    graficoHistoricoAtivo = new Chart(ctx, {
-
-        type: 'line',
-
-        data: {
-
-            labels: labels,
-
-            datasets: [{
-
-                label: 'Score CARAT',
-
-                data: dados,
-
-                borderColor: '#3b82f6',
-
-                backgroundColor: 'rgba(59, 130, 246, 0.1)',
-
-                borderWidth: 3,
-
-                tension: 0.2,
-
-                fill: true,
-
-                pointBackgroundColor: '#1e3a8a',
-
-                pointRadius: 5
-
-            }]
-
-        },
-
-        options: {
-
-            responsive: true,
-
-            maintainAspectRatio: false,
-
-            scales: {
-
-                y: {
-
-                    min: 0,
-
-                    max: 30,
-
-                    grid: { color: '#e5e7eb' },
-
-                    ticks: { stepSize: 5 }
-
-                },
-
-                x: { grid: { display: false } }
-
-            },
-
-            plugins: {
-
-                legend: { display: false }
-
-            }
-
-        }
-
-    });
-
-}
-
-
-
-//Lógica para gravar o novo medicamento
-
-async function gravarMedicamento() {
-
-    if (!utenteFichaAtualId) return;
-
-
-
-    const medicamento = document.getElementById('input-med-nome').value;
-
-    const posologia = document.getElementById('input-med-pos').value;
-
-
-
-    if (!medicamento) {
-
-        alert("O nome do medicamento é obrigatório.");
-
+async function gravarTemperatura() {
+    if (!utenteFichaAtualId)
         return;
-
+    const valorBruto = getInputValue('input-temp-valor').trim().replace(',', '.');
+    const temperatura = Number(valorBruto);
+    const dataInput = getInputValue('input-temp-data');
+    const dataEfetiva = dataInput ? new Date(dataInput).toISOString() : new Date().toISOString();
+    if (Number.isNaN(temperatura)) {
+        alert('Introduza uma temperatura válida.');
+        return;
     }
-
-
-
+    if (temperatura < 30 || temperatura > 45) {
+        alert('Temperatura fora do intervalo esperado (30ºC a 45ºC).');
+        return;
+    }
     try {
-
-        const res = await fetch(`${API_URL}/utentes/${utenteFichaAtualId}/terapeutica`, {
-
+        const res = await fetch(`${API_URL}/utentes/${utenteFichaAtualId}/temperatura`, {
             method: 'POST',
-
             headers: { 'Content-Type': 'application/json' },
-
-            body: JSON.stringify({ medicamento, posologia })
-
+            body: JSON.stringify({
+                temperatura,
+                data_efetiva: dataEfetiva
+            })
         });
-
-
-
-        if (res.ok) {
-
-            document.getElementById('input-med-nome').value = '';
-
-            document.getElementById('input-med-pos').value = '';
-
-           
-
-            // Força a recarregar a ficha para mostrar o novo medicamento instantaneamente
-
-            abrirFichaClinica(utenteFichaAtualId, document.getElementById('prof-nome').innerText, '', '');
-
-        } else {
-
-            alert("Erro ao gravar medicamento no servidor.");
-
-        }
-
-    } catch (err) {
-
-        console.error("Erro:", err);
-
-        alert("Erro de comunicação.");
-
-    }
-
-}
-
-
-
-
-
-async function carregarAvaliacoes() {
-
-    const lista = document.getElementById('lista-resultados') || document.getElementById('lista-avaliacoes');
-
-    if (!lista) return;
-
-
-
-    try {
-
-        const res = await fetch(`${API_URL}/carat-resultados`);
-
-        const avaliacoes = await res.json();
-
-
-
-        lista.innerHTML = '';
-
-        if (avaliacoes.length === 0) {
-
-            lista.innerHTML = '<li class="empty-state">Sem dados carregados.</li>';
-
+        if (!res.ok) {
+            const erro = await res.json().catch(() => ({}));
+            alert(`Erro ao guardar temperatura: ${erro.error || res.statusText}`);
             return;
-
         }
-
-
-
+        setInputValue('input-temp-valor', '');
+        alert('Temperatura registada com sucesso.');
+        await abrirFichaClinica(utenteFichaAtualId, document.getElementById('prof-nome').innerText, '', '');
+        await carregarObservacoesFhirDoUtente(utenteFichaAtualId);
+    }
+    catch (err) {
+        console.error('Erro ao guardar temperatura:', err);
+        alert('Erro de comunicação ao guardar temperatura.');
+    }
+}
+async function eliminarUtente(id, nome) {
+    if (!confirm(`Tem a certeza que pretende eliminar o utente "${nome}" (ID: ${id})? Esta ação é irreversível.`))
+        return;
+    try {
+        const res = await fetch(`${API_URL}/utentes/${id}`, { method: 'DELETE' });
+        if (!res.ok) {
+            const err = await res.json().catch(() => ({}));
+            alert('Erro ao eliminar utente: ' + (err.error || res.statusText));
+            return;
+        }
+        alert('Utente eliminado com sucesso');
+        await carregarUtentes();
+    }
+    catch (err) {
+        console.error('Erro ao eliminar utente:', err);
+        alert('Erro ao eliminar utente. Veja a consola para detalhes.');
+    }
+}
+function fecharFichaClinica() {
+    document.getElementById('modal-perfil').style.display = 'none';
+}
+function gerarGraficoEvolucao(labels, dados) {
+    const ctx = document.getElementById('graficoHistoricoUtente');
+    if (!ctx)
+        return;
+    if (graficoHistoricoAtivo)
+        graficoHistoricoAtivo.destroy();
+    graficoHistoricoAtivo = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [{
+                    label: 'Score CARAT',
+                    data: dados,
+                    borderColor: '#3b82f6',
+                    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                    borderWidth: 3,
+                    tension: 0.2,
+                    fill: true,
+                    pointBackgroundColor: '#1e3a8a',
+                    pointRadius: 5
+                }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    min: 0,
+                    max: 30,
+                    grid: { color: '#e5e7eb' },
+                    ticks: { stepSize: 5 }
+                },
+                x: { grid: { display: false } }
+            },
+            plugins: {
+                legend: { display: false }
+            }
+        }
+    });
+}
+// 🛡️ Lógica para gravar o novo medicamento
+async function gravarMedicamento() {
+    if (!utenteFichaAtualId)
+        return;
+    const medicamento = getInputValue('input-med-nome');
+    const posologia = getInputValue('input-med-pos');
+    if (!medicamento) {
+        alert("O nome do medicamento é obrigatório.");
+        return;
+    }
+    try {
+        const res = await fetch(`${API_URL}/utentes/${utenteFichaAtualId}/terapeutica`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ medicamento, posologia })
+        });
+        if (res.ok) {
+            setInputValue('input-med-nome', '');
+            setInputValue('input-med-pos', '');
+            // Força a recarregar a ficha para mostrar o novo medicamento instantaneamente
+            abrirFichaClinica(utenteFichaAtualId, document.getElementById('prof-nome').innerText, '', '');
+        }
+        else {
+            alert("Erro ao gravar medicamento no servidor.");
+        }
+    }
+    catch (err) {
+        console.error("Erro:", err);
+        alert("Erro de comunicação.");
+    }
+}
+// ==========================================
+async function carregarAvaliacoes() {
+    const lista = document.getElementById('lista-resultados') || document.getElementById('lista-avaliacoes');
+    if (!lista)
+        return;
+    try {
+        const res = await fetch(`${API_URL}/carat-resultados`);
+        const avaliacoes = await res.json();
+        lista.innerHTML = '';
+        if (avaliacoes.length === 0) {
+            lista.innerHTML = '<li class="empty-state">Sem dados carregados.</li>';
+            return;
+        }
         avaliacoes.forEach(aval => {
-
             const item = document.createElement('li');
-
             const dataFormatada = new Date(aval.data).toLocaleDateString('pt-PT');
-
             const corBadge = aval.score_total < 24 ? '#f59e0b' : '#10b981';
-
-
-
             item.innerHTML = `
 
                 <div style="display:flex; justify-content: space-between; align-items: center;">
@@ -561,83 +457,40 @@ async function carregarAvaliacoes() {
                 </div>
 
             `;
-
             lista.appendChild(item);
-
         });
-
-    } catch (err) {
-
-        console.error("Erro ao carregar avaliações:", err);
-
-        lista.innerHTML = '<li class="empty-state">Erro ao carregar resultados.</li>';
-
     }
-
+    catch (err) {
+        console.error("Erro ao carregar avaliações:", err);
+        lista.innerHTML = '<li class="empty-state">Erro ao carregar resultados.</li>';
+    }
 }
-
-
-
 async function carregarSintomas() {
-
     const lista = document.getElementById('lista-sintomas');
-
-    if (!lista) return;
-
-
-
+    if (!lista)
+        return;
     try {
-
         const urlRequest = `${API_URL}/sintomas?t=${Date.now()}`;
-
         const res = await fetch(urlRequest, { cache: 'no-store' });
-
-       
-
         const sintomas = await res.json();
-
-
-
         lista.innerHTML = '';
-
-        let contagem = { Leve: 0, Moderada: 0, Grave: 0 };
-
-
-
+        let contagem = { Leve: 0, Normal: 0, Grave: 0 };
         if (sintomas.length === 0) {
-
             lista.innerHTML = '<li class="empty-state">Sem sintomas registados.</li>';
-
             atualizarGrafico(0, 0, 0);
-
             return;
-
         }
-
-
-
         sintomas.forEach(s => {
-
-            const severidade = s.severidade || 'Leve';
-
+            let severidade = s.severidade || 'Leve';
+            // Normalizar valores: backend may use 'Normal' while older entries or UI labels use 'Moderada'
+            if (severidade === 'Moderada')
+                severidade = 'Normal';
             const descricao = s.descricao || 'Sem descrição';
-
-
-
-            if(contagem[severidade] !== undefined) {
-
+            if (contagem[severidade] !== undefined) {
                 contagem[severidade]++;
-
             }
-
-
-
             const item = document.createElement('li');
-
             const badgeClass = severidade.toLowerCase();
-
-
-
             item.innerHTML = `
 
                 <div style="display:flex; justify-content: space-between; align-items: center;">
@@ -657,513 +510,444 @@ async function carregarSintomas() {
                 <div style="margin: 8px 0;">"${escaparHTML(descricao)}"</div>
 
             `;
-
             lista.appendChild(item);
-
         });
-
-
-
-        atualizarGrafico(contagem.Leve, contagem.Moderada, contagem.Grave);
-
-    } catch (err) {
-
+        atualizarGrafico(contagem.Leve, contagem.Normal, contagem.Grave);
+    }
+    catch (err) {
         console.error("Erro ao carregar sintomas:", err);
-
         lista.innerHTML = '<li class="empty-state">Erro ao processar sintomas.</li>';
-
     }
-
 }
-
-
-
 async function eliminarSintoma(id) {
-
-    if (!confirm('Tens a certeza que queres eliminar este sintoma?')) return;
-
-
-
+    if (!confirm('Tens a certeza que queres eliminar este sintoma?'))
+        return;
     try {
-
         const res = await fetch(`${API_URL}/sintomas/${id}`, {
-
             method: 'DELETE'
-
         });
-
-
-
         if (res.ok) {
-
             await carregarSintomas();
-
-        } else {
-
+        }
+        else {
             alert("Erro ao eliminar o sintoma.");
-
         }
-
-    } catch (err) {
-
+    }
+    catch (err) {
         console.error("Erro ao eliminar sintoma:", err);
-
         alert("Erro de comunicação com a API.");
-
     }
-
 }
-
-
-
 function toggleFormUtente() {
-
     const form = document.getElementById('form-novo-utente');
-
     if (form) {
-
         form.style.display = form.style.display === 'none' ? 'block' : 'none';
-
     }
-
 }
-
-
-
 async function gravarNovoUtente() {
-
-    const nome = document.getElementById('input-utente-nome').value;
-
-    const email = document.getElementById('input-utente-email').value;
-
-    const telefone = document.getElementById('input-utente-tel').value;
-
-
-
+    const nome = getInputValue('input-utente-nome');
+    const email = getInputValue('input-utente-email');
+    const telefone = getInputValue('input-utente-tel');
     if (!nome) {
-
         alert("O Nome do utente é obrigatório.");
-
         return;
-
     }
-
-
-
     try {
-
         const res = await fetch(`${API_URL}/utentes`, {
-
             method: 'POST',
-
             headers: { 'Content-Type': 'application/json' },
-
             body: JSON.stringify({ nome, email, telefone })
-
         });
-
-
-
         if (res.ok) {
-
-            document.getElementById('input-utente-nome').value = '';
-
-            document.getElementById('input-utente-email').value = '';
-
-            document.getElementById('input-utente-tel').value = '';
-
-           
-
+            setInputValue('input-utente-nome', '');
+            setInputValue('input-utente-email', '');
+            setInputValue('input-utente-tel', '');
             toggleFormUtente();
-
+            const resultado = await res.json();
             await carregarUtentes();
-
-           
-
-            setTimeout(() => alert("Utente registado com sucesso!"), 10);
-
-        } else {
-
+            const mensagemFhir = resultado.fhirId
+                ? `FHIR criado com o id ${resultado.fhirId}.`
+                : resultado.fhirError
+                    ? 'O utente foi criado localmente, mas o FHIR falhou.'
+                    : 'O utente foi criado localmente; o FHIR não devolveu id.';
+            setTimeout(() => alert(`Utente registado com sucesso! ${mensagemFhir}`), 10);
+        }
+        else {
             const erroDoServidor = await res.text();
-
             alert(`Erro ao registar utente: ${erroDoServidor}`);
-
         }
-
-    } catch (err) {
-
-        console.error("Erro no fetch:", err);
-
-        alert("Erro de comunicação com a API.");
-
     }
-
+    catch (err) {
+        console.error("Erro no fetch:", err);
+        alert("Erro de comunicação com a API.");
+    }
 }
-
-
-async function sincronizarUtentesFHIR() {
-
+// ========================================
+// 📊 Funções para sincronizar observações FHIR
+// ========================================
+async function sincronizarObservacoesFhir(utenteId) {
     try {
-
-        const res = await fetch(`${API_URL}/utentes/sync/fhir`, {
-
+        console.log(`[Obs Sync] Sincronizando observações para utente ${utenteId}...`);
+        const res = await fetch(`${API_URL}/utentes/${utenteId}/sincronizar-observacoes-fhir`, {
             method: 'POST'
-
         });
-
-
-
-        const resultado = await res.json();
-
-
-
         if (!res.ok) {
-
-            alert(`Erro na sincronização FHIR: ${resultado.error || res.statusText}`);
-
+            const erro = await res.json();
+            console.error('[Obs Sync] Erro:', erro);
+            alert(`⚠️ Erro ao sincronizar: ${erro.error}`);
             return;
         }
-
-
-
-        await carregarUtentes();
-
-
-
-        alert(`FHIR sincronizado: ${resultado.synced}/${resultado.total} utentes. Erros: ${resultado.errors}`);
-
-    } catch (err) {
-
-        console.error('Erro a sincronizar utentes FHIR:', err);
-
-        alert('Erro de comunicação ao sincronizar utentes com FHIR.');
-
+        const resultado = await res.json();
+        console.log('[Obs Sync] Resultado:', resultado);
+        alert(`✅ Sincronização concluída!\n\nObservações encontradas: ${resultado.total}\nNova(s): ${resultado.sincronizadas}\nDuplicada(s): ${resultado.duplicadas}`);
+        // Recarregar observações
+        await carregarObservacoesFhirDoUtente(utenteId);
     }
-
+    catch (err) {
+        console.error('[Obs Sync] Erro geral:', err);
+        alert('❌ Erro de ligação ao sincronizar observações');
+    }
 }
-
-
-
-async function exportarDadosCSV() {
-
+async function carregarObservacoesFhirDoUtente(utenteId) {
     try {
-
-        const res = await fetch(`${API_URL}/carat-resultados`);
-
-        const avaliacoes = await res.json();
-
-
-
-        if (avaliacoes.length === 0) {
-
-            alert("Não existem dados para exportar.");
-
-            return;
-
+        try {
+            await fetch(`${API_URL}/utentes/${utenteId}/sincronizar-observacoes-fhir`, { method: 'POST' });
         }
-
-
-
-        let csvContent = "ID Avaliação,ID Utente,Score Total,Interpretação,Data\n";
-
-
-
-        avaliacoes.forEach(aval => {
-
-            const dataFormatada = new Date(aval.data).toLocaleDateString('pt-PT');
-
-            const score = aval.score_total;
-
-            const interpretacao = aval.interpretacao || "N/A";
-
-           
-
-            csvContent += `${aval.id},${aval.utente_id},${score},"${interpretacao}",${dataFormatada}\n`;
-
+        catch (syncErr) {
+            console.warn(`[Obs Load] Sincronização silenciosa falhou para utente ${utenteId}:`, syncErr);
+        }
+        const res = await fetch(`${API_URL}/utentes/${utenteId}/observacoes-fhir`);
+        const observacoes = await res.json();
+        // Atualizar o card de observações do patient
+        const lista = document.getElementById(`observacoes-fhir-${utenteId}`);
+        if (!lista) {
+            console.log(`[Obs Load] Container não encontrado para utente ${utenteId}`);
+            return;
+        }
+        lista.innerHTML = '';
+        if (!Array.isArray(observacoes) || observacoes.length === 0) {
+            lista.innerHTML = '<div class="empty-state" style="padding: 10px; font-size: 12px;">Nenhuma observação sincronizada.</div>';
+            return;
+        }
+        observacoes.slice(0, 5).forEach(obs => {
+            const item = document.createElement('div');
+            const tipoIcon = obs.tipo === 'temperatura' ? '🌡️' :
+                obs.tipo === 'medicamento' ? '💊' :
+                    obs.tipo === 'pressao_sistolica' || obs.tipo === 'pressao_diastolica' ? '❤️' : '📊';
+            const valorFormatado = obs.valor !== undefined && obs.valor !== null && String(obs.valor).trim() !== ''
+                ? String(obs.valor)
+                : obs.valueQuantity?.value !== undefined && obs.valueQuantity?.value !== null
+                    ? String(obs.valueQuantity.value)
+                    : typeof obs.valueString === 'string' && obs.valueString.trim()
+                        ? obs.valueString
+                        : obs.valueCodeableConcept?.text || obs.valueCodeableConcept?.coding?.[0]?.display || '';
+            const unidadeFormatada = obs.unidade || obs.unit || obs.valueQuantity?.unit || obs.valueQuantity?.code || '';
+            const dataFormatada = obs.data_efetiva || obs.effectiveDateTime || obs.effectiveDateTimeRaw || '';
+            item.style.cssText = 'padding: 8px; border-bottom: 1px solid #e5e7eb; font-size: 12px;';
+            item.innerHTML = `
+                <div>
+                    <strong>${tipoIcon} ${escaparHTML(obs.display || obs.codigo)}</strong>
+                </div>
+                <div style="color: #6b7280; margin-top: 3px;">
+                    ${escaparHTML(String(valorFormatado))} ${escaparHTML(String(unidadeFormatada))} | ${dataFormatada ? new Date(dataFormatada).toLocaleDateString('pt-PT') : ''}
+                </div>
+            `;
+            lista.appendChild(item);
         });
-
-
-
-        const blob = new Blob(["\uFEFF" + csvContent], { type: 'text/csv;charset=utf-8;' });
-
-        const url = URL.createObjectURL(blob);
-
-       
-
-        const link = document.createElement("a");
-
-        link.setAttribute("href", url);
-
-        link.setAttribute("download", "resultados_carat.csv");
-
-        document.body.appendChild(link);
-
-        link.click();
-
-        document.body.removeChild(link);
-
-
-
-    } catch (err) {
-
-        console.error("Erro ao exportar Excel:", err);
-
-        alert("Erro ao tentar gerar o ficheiro.");
-
+        if (observacoes.length > 5) {
+            const mais = document.createElement('div');
+            mais.style.cssText = 'padding: 8px; color: #0891b2; font-size: 11px; text-align: center;';
+            mais.innerHTML = `+${observacoes.length - 5} observações`;
+            lista.appendChild(mais);
+        }
+        console.log(`[Obs Load] ✅ Carregadas ${observacoes.length} observações`);
     }
-
-}
-
-
-
-async function resolverAlerta(alertaId) {
-
-    if (!confirm('Confirmas que a situação foi resolvida?')) return;
-
-
-
-    try {
-
-        await fetch(`${API_URL}/medico/alertas/${alertaId}/resolver`, {
-
-            method: 'PUT'
-
-        });
-
-        carregarAlertas();
-
-    } catch (err) {
-
-        alert("Erro ao resolver alerta.");
-
+    catch (err) {
+        console.error('[Obs Load] Erro:', err);
     }
-
 }
-
-
-
-async function gravarNovoSintoma() {
-
-    const utenteId = document.getElementById('input-sintoma-utente').value;
-
-    const descricao = document.getElementById('input-sintoma-desc').value;
-
-    const severidade = document.getElementById('input-sintoma-sev').value;
-
-
-
-    if (!utenteId || !descricao) {
-
-        alert("Por favor, preenche o ID do Utente e a Descrição.");
-
+async function carregarObservacoesFHIR() {
+    const lista = document.getElementById('lista-fhir-observacoes');
+    if (!lista)
         return;
-
-    }
-
-
-
+    lista.innerHTML = '<li class="empty-state">A carregar observações FHIR...</li>';
     try {
-
-        const res = await fetch(`${API_URL}/sintomas`, {
-
-            method: 'POST',
-
-            headers: {
-
-                'Content-Type': 'application/json'
-
-            },
-
-            body: JSON.stringify({
-
-                utente_id: parseInt(utenteId),
-
-                descricao: descricao,
-
-                severidade: severidade
-
-            })
-
-        });
-
-
-
-        if (res.ok) {
-
-            document.getElementById('input-sintoma-desc').value = '';
-
-           
-
-            await carregarSintomas();
-
-           
-
-            setTimeout(() => {
-
-                alert("Sintoma gravado com sucesso!");
-
-            }, 10);
-
-           
-
-        } else {
-
-            const erroDoServidor = await res.text();
-
-            alert(`O Servidor recusou! (Erro HTTP ${res.status}): \n\nDetalhes:\n${erroDoServidor}`);
-
+        const res = await fetch(`${API_URL}/fhir/observations`);
+        if (!res.ok) {
+            throw new Error(`HTTP ${res.status}`);
         }
-
-    } catch (err) {
-
-        console.error("Erro no fetch:", err);
-
-        alert("Erro de comunicação com a API.");
-
-    }
-
-}
-
-
-
-function configurarPesquisa() {
-
-    const inputPesquisa = document.querySelector('input[placeholder*="Pesquisar"]');
-
-    if (!inputPesquisa) return;
-
-
-
-    inputPesquisa.addEventListener('input', (evento) => {
-
-        const termoPesquisa = evento.target.value.toLowerCase();
-
-        const listaUtentes = document.getElementById('lista-utentes');
-
-        if (!listaUtentes) return;
-
-
-
-        const items = listaUtentes.getElementsByTagName('li');
-
-       
-
-        for (let i = 0; i < items.length; i++) {
-
-            const textoItem = items[i].textContent.toLowerCase();
-
-           
-
-            if (textoItem.includes(termoPesquisa)) {
-
-                items[i].style.display = '';
-
-            } else {
-
-                items[i].style.display = 'none';
-
-            }
-
+        const observacoes = await res.json();
+        lista.innerHTML = '';
+        if (!Array.isArray(observacoes) || observacoes.length === 0) {
+            lista.innerHTML = '<li class="empty-state">Nenhuma observação FHIR encontrada.</li>';
+            return;
         }
-
-    });
-
-}
-
-
-
-function atualizarGrafico(leve, moderada, grave) {
-
-    const ctx = document.getElementById('graficoSintomas');
-
-    if (!ctx) return;
-
-
-
-    if (graficoSintomasAtivo) graficoSintomasAtivo.destroy();
-
-
-
-    graficoSintomasAtivo = new Chart(ctx, {
-
-        type: 'doughnut',
-
-        data: {
-
-            labels: ['Leve', 'Moderada', 'Grave'],
-
-            datasets: [{
-
-                data: [leve, moderada, grave],
-
-                backgroundColor: ['#10b981', '#f59e0b', '#ef4444'],
-
-                borderWidth: 0
-
-            }]
-
-        },
-
-        options: {
-
-            responsive: true,
-
-            maintainAspectRatio: false,
-
-            plugins: {
-
-                legend: {
-
-                    labels: { color: '#6b7280' }
-
+        observacoes.forEach(obs => {
+            const item = document.createElement('li');
+            const corStatus = obs.status === 'final' ? '#10b981' : '#f59e0b';
+            const tipoObs = obs.display || obs.codeText || obs.codeDisplay || obs.code || 'Observação';
+            const valorObs = (() => {
+                if (obs.value !== undefined && obs.value !== null && String(obs.value).trim() !== '') {
+                    return `${obs.value} ${obs.unit || ''}`.trim();
                 }
+                if (typeof obs.valueString === 'string' && obs.valueString.trim()) {
+                    return obs.valueString;
+                }
+                if (obs.valueCodeableConcept?.text) {
+                    return obs.valueCodeableConcept.text;
+                }
+                if (obs.valueCodeableConcept?.coding?.[0]?.display) {
+                    return obs.valueCodeableConcept.coding[0].display;
+                }
+                return 'Sem valor';
+            })();
+            const dataObs = obs.effectiveDateTime || obs.effectiveDateTimeRaw || '';
+            const pacienteObs = obs.patientName || obs.subject || '';
+            const estadoObs = obs.status || 'desconhecido';
+            item.innerHTML = `
 
-            }
+                <div style="display:flex; justify-content: space-between; align-items: center;">
 
-        }
+                    <div>
 
-    });
+                        <strong>${escaparHTML(tipoObs)}</strong>
 
-}
+                        <span class="badge" style="background-color: ${corStatus}; color: white; margin-left: 8px;">${escaparHTML(estadoObs)}</span>
 
+                    </div>
 
+                </div>
 
-function toggleTheme() {
+                <div style="color: var(--text-muted); font-size: 13px; margin-top: 5px;">
 
-    const body = document.documentElement;
+                    📊 <strong>Valor:</strong> ${escaparHTML(String(valorObs))} | 📅 ${escaparHTML(String(dataObs))}
 
-    const isDark = body.getAttribute('data-theme') === 'dark';
+                </div>
 
-    body.setAttribute('data-theme', isDark ? 'light' : 'dark');
+                <div style="color: var(--text-muted); font-size: 12px; margin-top: 3px;">
 
-    document.getElementById('btn-theme').innerText = isDark ? '🌙' : '☀️';
+                    🔗 Paciente: ${escaparHTML(String(pacienteObs))}
 
-    localStorage.setItem('tema', isDark ? 'light' : 'dark');
+                </div>
 
-}
-
-
-
-window.onload = () => {
-
-    if (localStorage.getItem('tema') === 'dark') {
-
-        document.documentElement.setAttribute('data-theme', 'dark');
-
-        document.getElementById('btn-theme').innerText = '☀️';
-
+            `;
+            lista.appendChild(item);
+        });
     }
-
-   
-
+    catch (err) {
+        console.error('Erro ao carregar observações FHIR:', err);
+        lista.innerHTML = '<li class="empty-state">Erro ao consultar servidor FHIR.</li>';
+    }
+}
+async function sincronizarUtentesFHIR() {
+    try {
+        const res = await fetch(`${API_URL}/utentes/sync/fhir`, {
+            method: 'POST'
+        });
+        const resultado = await res.json();
+        if (!res.ok) {
+            alert(`Erro na sincronização FHIR: ${resultado.error || res.statusText}`);
+            return;
+        }
+        await carregarUtentes();
+        let mensagem = `FHIR sincronizado: ${resultado.synced}/${resultado.total} utentes. Erros: ${resultado.errors}`;
+        if (resultado.total === 0) {
+            mensagem = '✅ Todos os utentes já estão sincronizados com FHIR.';
+        }
+        else if (resultado.synced === 0 && resultado.errors > 0) {
+            mensagem = `⚠️ Nenhum utente sincronizado. Erros: ${resultado.errors}`;
+        }
+        alert(mensagem);
+    }
+    catch (err) {
+        console.error('Erro a sincronizar utentes FHIR:', err);
+        alert('Erro de comunicação ao sincronizar utentes com FHIR.');
+    }
+}
+async function sincronizarTodosFhir() {
+    if (!confirm('Isto vai sincronizar TODOS os patients do servidor FHIR. Continuar?'))
+        return;
+    try {
+        const res = await fetch(`${API_URL}/utentes/sync/fhir-all`, {
+            method: 'POST'
+        });
+        const resultado = await res.json();
+        if (!res.ok) {
+            alert(`Erro na sincronização: ${resultado.error}`);
+            return;
+        }
+        await carregarUtentes();
+        alert(`✅ Sincronização concluída!\n\nPatients encontrados: ${resultado.total}\nImportados: ${resultado.imported}\nErros: ${resultado.errors}`);
+    }
+    catch (err) {
+        console.error('Erro ao sincronizar FHIR:', err);
+        alert('Erro de comunicação ao sincronizar com FHIR.');
+    }
+}
+async function importarUtenteDoFhir() {
+    const fhirId = prompt('Cole o FHIR ID do paciente (ex: cfsb1779353381571):');
+    if (!fhirId || !fhirId.trim())
+        return;
+    try {
+        const res = await fetch(`${API_URL}/utentes/import-fhir/${encodeURIComponent(fhirId)}`, {
+            method: 'POST'
+        });
+        if (!res.ok) {
+            const erro = await res.json();
+            alert(`Erro ao importar: ${erro.error}`);
+            return;
+        }
+        const resultado = await res.json();
+        alert(`✅ Paciente importado!\n\nNome: ${resultado.nome}\nEmail: ${resultado.email}\nTelefone: ${resultado.telefone}`);
+        await carregarUtentes();
+    }
+    catch (err) {
+        console.error('Erro ao importar do FHIR:', err);
+        alert('Erro de comunicação ao importar do FHIR.');
+    }
+}
+async function exportarDadosCSV() {
+    try {
+        const res = await fetch(`${API_URL}/carat-resultados`);
+        const avaliacoes = await res.json();
+        if (avaliacoes.length === 0) {
+            alert("Não existem dados para exportar.");
+            return;
+        }
+        let csvContent = "ID Avaliação,ID Utente,Score Total,Interpretação,Data\n";
+        avaliacoes.forEach(aval => {
+            const dataFormatada = new Date(aval.data).toLocaleDateString('pt-PT');
+            const score = aval.score_total;
+            const interpretacao = aval.interpretacao || "N/A";
+            csvContent += `${aval.id},${aval.utente_id},${score},"${interpretacao}",${dataFormatada}\n`;
+        });
+        const blob = new Blob(["\uFEFF" + csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.setAttribute("href", url);
+        link.setAttribute("download", "resultados_carat.csv");
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
+    catch (err) {
+        console.error("Erro ao exportar Excel:", err);
+        alert("Erro ao tentar gerar o ficheiro.");
+    }
+}
+async function resolverAlerta(alertaId) {
+    if (!confirm('Confirmas que a situação foi resolvida?'))
+        return;
+    try {
+        await fetch(`${API_URL}/medico/alertas/${alertaId}/resolver`, {
+            method: 'PUT'
+        });
+        carregarAlertas();
+    }
+    catch (err) {
+        alert("Erro ao resolver alerta.");
+    }
+}
+async function gravarNovoSintoma() {
+    const utenteId = getInputValue('input-sintoma-utente');
+    const descricao = getInputValue('input-sintoma-desc');
+    const severidade = getInputValue('input-sintoma-sev');
+    if (!utenteId || !descricao) {
+        alert("Por favor, preenche o ID do Utente e a Descrição.");
+        return;
+    }
+    try {
+        const res = await fetch(`${API_URL}/sintomas`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                utente_id: parseInt(utenteId),
+                descricao: descricao,
+                severidade: severidade
+            })
+        });
+        if (res.ok) {
+            setInputValue('input-sintoma-desc', '');
+            await carregarSintomas();
+            setTimeout(() => {
+                alert("Sintoma gravado com sucesso!");
+            }, 10);
+        }
+        else {
+            const erroDoServidor = await res.text();
+            alert(`O Servidor recusou! (Erro HTTP ${res.status}): \n\nDetalhes:\n${erroDoServidor}`);
+        }
+    }
+    catch (err) {
+        console.error("Erro no fetch:", err);
+        alert("Erro de comunicação com a API.");
+    }
+}
+function configurarPesquisa() {
+    const inputPesquisa = document.querySelector('input[placeholder*="Pesquisar"]');
+    if (!inputPesquisa)
+        return;
+    inputPesquisa.addEventListener('input', (evento) => {
+        const termoPesquisa = evento.target.value.toLowerCase();
+        const listaUtentes = document.getElementById('lista-utentes');
+        if (!listaUtentes)
+            return;
+        const items = listaUtentes.getElementsByTagName('li');
+        for (let i = 0; i < items.length; i++) {
+            const textoItem = items[i].textContent.toLowerCase();
+            if (textoItem.includes(termoPesquisa)) {
+                items[i].style.display = '';
+            }
+            else {
+                items[i].style.display = 'none';
+            }
+        }
+    });
+}
+function atualizarGrafico(leve, normal, grave) {
+    const ctx = document.getElementById('graficoSintomas');
+    if (!ctx)
+        return;
+    if (graficoSintomasAtivo)
+        graficoSintomasAtivo.destroy();
+    graficoSintomasAtivo = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: ['Leve', 'Moderada', 'Grave'],
+            datasets: [{
+                    data: [leve, normal, grave],
+                    backgroundColor: ['#10b981', '#f59e0b', '#ef4444'],
+                    borderWidth: 0
+                }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    labels: { color: '#6b7280' }
+                }
+            }
+        }
+    });
+}
+function toggleTheme() {
+    const body = document.documentElement;
+    const isDark = body.getAttribute('data-theme') === 'dark';
+    body.setAttribute('data-theme', isDark ? 'light' : 'dark');
+    document.getElementById('btn-theme').innerText = isDark ? '🌙' : '☀️';
+    localStorage.setItem('tema', isDark ? 'light' : 'dark');
+}
+window.onload = () => {
+    if (localStorage.getItem('tema') === 'dark') {
+        document.documentElement.setAttribute('data-theme', 'dark');
+        document.getElementById('btn-theme').innerText = '☀️';
+    }
     carregarUtentes();
-
     carregarAlertas();
-
     carregarSintomas();
-
     carregarAvaliacoes();
-
     configurarPesquisa();
-
 };

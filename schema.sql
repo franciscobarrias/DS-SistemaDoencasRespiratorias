@@ -10,7 +10,9 @@ CREATE TABLE medicos (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     nome TEXT NOT NULL,
     especialidade TEXT,
-    email TEXT
+    email TEXT,
+    telefone TEXT,
+    status TEXT DEFAULT 'Ativo'
 );
 
 -- Tabela de Utentes (Com a coluna telefone corrigida)
@@ -20,6 +22,7 @@ CREATE TABLE utentes (
     email TEXT,
     telefone TEXT,
     medico_id INTEGER,
+    numero_identidade TEXT,
     fhir_id TEXT,
     FOREIGN KEY (medico_id) REFERENCES medicos (id)
 );

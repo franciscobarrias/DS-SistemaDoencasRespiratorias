@@ -1,5 +1,10 @@
 function ensureAuthenticated(req: any, res: any, next: any): void {
     try {
+        const publicPaths = new Set(['/', '/login.html', '/style.css']);
+        if (publicPaths.has(req.path)) {
+            return next();
+        }
+
         if (req.session && req.session.authenticated) {
             return next();
         }
@@ -10,7 +15,7 @@ function ensureAuthenticated(req: any, res: any, next: any): void {
             return res.status(401).json({ error: 'Unauthorized' });
         }
 
-        return res.redirect('/');
+        return res.redirect('/login.html');
     } catch (err) {
         return res.status(500).send('Auth error');
     }
