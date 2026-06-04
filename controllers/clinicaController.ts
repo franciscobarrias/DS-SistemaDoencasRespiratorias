@@ -25,6 +25,20 @@ const dbRun = (sql, params = []) => new Promise((resolve, reject) => {
     });
 });
 
+// Resolver fetch no ambiente servidor (Node 18+ tem global fetch)
+let _fetch: typeof fetch | undefined;
+if (typeof globalThis.fetch === 'function') {
+    // @ts-ignore
+    _fetch = globalThis.fetch.bind(globalThis);
+} else {
+    try {
+        // eslint-disable-next-line @typescript-eslint/no-var-requires
+        _fetch = require('node-fetch');
+    } catch (err) {
+        console.error('Aviso: fetch não disponível no servidor. Instale Node 18+ ou node-fetch para integrações FHIR.');
+    }
+}
+
 const ensureFhirIdColumn = async () => {
     try {
         const cols = await dbAll('PRAGMA table_info(utentes)');
@@ -557,7 +571,7 @@ const clinicaController = {
 
             // Buscar observações do FHIR para este patient
             const url = `https://fhir.hl7.pt/r5/fhir/Observation?subject=Patient/${utente.fhir_id}&_count=100`;
-            const resposta = await fetch(url);
+            const resposta = await _fetch ? await _fetch(url) : await fetch(url);
             
             if (!resposta.ok) {
                 console.log(`[Obs Sync] Erro ao buscar observações: ${resposta.status}`);

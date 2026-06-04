@@ -3,6 +3,21 @@ const { mapObservation } = require('../mappers/fhir-observation.mapper');
 
 const FHIR_BASE_URL = 'https://fhir.hl7.pt/r5/fhir';
 
+// Resolver fetch: prefer global fetch (Node 18+), fallback para node-fetch
+let _fetch: typeof fetch | undefined;
+if (typeof globalThis.fetch === 'function') {
+    // @ts-ignore
+    _fetch = globalThis.fetch.bind(globalThis);
+} else {
+    try {
+        // eslint-disable-next-line @typescript-eslint/no-var-requires
+        const nodeFetch = require('node-fetch');
+        _fetch = nodeFetch;
+    } catch (err) {
+        throw new Error('No fetch available. Install Node 18+ or add node-fetch');
+    }
+}
+
 async function getObservationsFromFhir(
     code: string = '8310-5',
     patient?: string
@@ -14,7 +29,7 @@ async function getObservationsFromFhir(
         url += `&subject=Patient/${patient}`;
     }
 
-    const resposta = await fetch(url);
+    const resposta = await _fetch!(url);
 
     if (!resposta.ok) {
         throw new Error(`Erro FHIR: ${resposta.status} - ${resposta.statusText}`);
@@ -58,7 +73,7 @@ async function getObservationsFromFhir(
 
 async function getPatientFromFhir(patientId: string): Promise<any> {
     const url = `${FHIR_BASE_URL}/Patient/${patientId}`;
-    const resposta = await fetch(url);
+    const resposta = await _fetch!(url);
 
     if (!resposta.ok) {
         throw new Error(`Paciente FHIR não encontrado: ${resposta.status}`);
