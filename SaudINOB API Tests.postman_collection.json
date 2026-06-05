@@ -1,0 +1,460 @@
+{
+  "info": {
+    "_postman_id": "74234fc2-a5ee-46c0-adfd-7d15e2adf070",
+    "name": "SaudINOB API Tests",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "54761476"
+  },
+  "item": [
+    {
+      "name": "FHIR-Paciente",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Deve devolver status 200\", function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              " ",
+              "pm.test(\"A resposta deve ser JSON\", function () {",
+              "\tpm.response.to.be.json;",
+              "});",
+              " ",
+              "pm.test(\"A resposta deve estar em formato FHIR Bundle\", function () {",
+              "\tconst jsonData = pm.response.json();",
+              "\tpm.expect(jsonData).to.have.property(\"resourceType\");",
+              "    pm.expect(jsonData.resourceType).to.eql(\"Bundle\");",
+              "});",
+              " ",
+              "pm.test(\"Os recursos devolvidos devem ser pacientes\", function () {",
+              "\tconst jsonData = pm.response.json();",
+              " ",
+              "\tif (jsonData.entry && jsonData.entry.length > 0) {",
+              "        jsonData.entry.forEach(function (item) {",
+              "            pm.expect(item.resource).to.have.property(\"resourceType\");",
+              "            pm.expect(item.resource.resourceType).to.eql(\"Patient\");",
+              "    \t});",
+              "\t}",
+              "});",
+              ""
+            ],
+            "type": "text/javascript",
+            "packages": {},
+            "requests": {}
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://fhir.hl7.pt/r5/fhir/Patient/",
+          "protocol": "http",
+          "host": [
+            "fhir",
+            "hl7",
+            "pt"
+          ],
+          "path": [
+            "r5",
+            "fhir",
+            "Patient",
+            ""
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "FHIR-Observações",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Status 200\", function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              " ",
+              "const json = pm.response.json();",
+              " ",
+              "pm.test(\"Resposta é uma Observation FHIR\", function () {",
+              "    pm.expect(json).to.be.an(\"object\");",
+              "    pm.expect(json.resourceType).to.eql(\"Observation\");",
+              "});",
+              " ",
+              "pm.test(\"Tem campos básicos\", function () {",
+              "\tpm.expect(json).to.have.property(\"id\");",
+              "    pm.expect(json).to.have.property(\"status\");",
+              "    pm.expect(json).to.have.property(\"code\");",
+              "});",
+              ""
+            ],
+            "type": "text/javascript",
+            "packages": {},
+            "requests": {}
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://fhir.hl7.pt/r5/fhir/Observation/cfsb1780417432369",
+          "protocol": "http",
+          "host": [
+            "fhir",
+            "hl7",
+            "pt"
+          ],
+          "path": [
+            "r5",
+            "fhir",
+            "Observation",
+            "cfsb1780417432369"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Login Admin",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Login feito com sucesso\", function () {",
+              "    pm.expect(pm.response.code).to.be.oneOf([200, 302]);",
+              "});",
+              ""
+            ],
+            "type": "text/javascript",
+            "packages": {},
+            "requests": {}
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"username\": \"admin\",\n  \"password\": \"admin\",\n  \"userType\": \"admin\"\n}\n",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "http://localhost:3000/login.html",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "3000",
+          "path": [
+            "login.html"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Login Paciente",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Login feito com sucesso\", function () {",
+              "    pm.expect(pm.response.code).to.be.oneOf([200, 302]);",
+              "});",
+              ""
+            ],
+            "type": "text/javascript",
+            "packages": {},
+            "requests": {}
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"username\": \"admin\",\n  \"password\": \"admin\",\n  \"userType\": \"paciente\"\n}\n",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "http://localhost:3000/login.html",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "3000",
+          "path": [
+            "login.html"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Login Medico",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Login feito com sucesso\", function () {",
+              "    pm.expect(pm.response.code).to.be.oneOf([200, 302]);",
+              "});",
+              ""
+            ],
+            "type": "text/javascript",
+            "packages": {},
+            "requests": {}
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"username\": \"admin\",\n  \"password\": \"admin\",\n  \"userType\": \"medico\"\n}\n",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "http://localhost:3000/login.html",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "3000",
+          "path": [
+            "login.html"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Login Errado",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Credenciais inválidas\", function () {",
+              " ",
+              "\tpm.response.to.have.status(401);",
+              " ",
+              "});",
+              ""
+            ],
+            "type": "text/javascript",
+            "packages": {},
+            "requests": {}
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"username\": \"admin\",\n  \"password\": \"chino\",\n  \"userType\": \"admin\"\n}\n",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "http://localhost:3000/login.html",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "3000",
+          "path": [
+            "login.html"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Logout",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Deve devolver status 200 ou redirecionamento\", function () {",
+              "\tpm.expect([200, 302]).to.include(pm.response.code);",
+              "});",
+              " ",
+              "pm.test(\"A operação de logout foi executada\", function () {",
+              "\tpm.expect(pm.response.code).to.be.oneOf([200, 302]);",
+              "});",
+              ""
+            ],
+            "type": "text/javascript",
+            "packages": {},
+            "requests": {}
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "http://localhost:3000/logout",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "3000",
+          "path": [
+            "logout"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Enviar Webhook",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Deve devolver status 200 ou 201\", function () {",
+              "\tpm.expect([200, 201]).to.include(pm.response.code);",
+              "});",
+              " ",
+              "pm.test(\"A resposta deve ser JSON\", function () {",
+              "\tpm.response.to.be.json;",
+              "});",
+              "pm.test(\"A resposta não deve estar vazia\", function () {",
+              "\tconst jsonData = pm.response.json();",
+              "    pm.expect(jsonData).to.be.an(\"object\");",
+              "});",
+              " ",
+              "pm.test(\"O webhook processou a observação corretamente\", function () {",
+              "\tconst jsonData = pm.response.json();",
+              " ",
+              "    pm.expect(jsonData).to.be.an(\"object\");",
+              "    pm.expect(JSON.stringify(jsonData).toLowerCase()).to.include(\"observ\");",
+              "});",
+              ""
+            ],
+            "type": "text/javascript",
+            "packages": {},
+            "requests": {}
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"fhir_id\": \"12733\",\n  \"codigo\": \"8310-5\",\n  \"display\": \"Temperatura\",\n  \"valor\": \"37.2\",\n  \"unidade\": \"ºC\",\n  \"data_efetiva\": \"2026-06-02T12:00:00Z\",\n  \"tipo\": \"temperatura\"\n}\n",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "http://localhost:3000/fhir/webhook/observacao",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "3000",
+          "path": [
+            "fhir",
+            "webhook",
+            "observacao"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Delete Paciente",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Delete executado\", function () {",
+              "pm.expect(pm.response.code).to.be.oneOf([200, 204, 404]);",
+              "});",
+              ""
+            ],
+            "type": "text/javascript",
+            "packages": {},
+            "requests": {}
+          }
+        }
+      ],
+      "request": {
+        "method": "DELETE",
+        "header": [],
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": []
+        },
+        "url": {
+          "raw": "http://localhost:3000/utentes/cfsb1780417432369",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "3000",
+          "path": [
+            "utentes",
+            "cfsb1780417432369"
+          ]
+        }
+      },
+      "response": []
+    }
+  ]
+}
