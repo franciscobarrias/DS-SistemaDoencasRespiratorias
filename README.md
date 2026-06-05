@@ -319,16 +319,7 @@ O sistema usa `express-session` para manter sessões de login.
 - não existe gestão de utilizadores com credenciais individuais por médico/doente
 - a segurança está adequada para desenvolvimento, mas não para uso clínico real sem reforço
 
-## Screenshots
 
-Adicionar aqui capturas de ecrã das principais vistas:
-
-- `login.html`
-- `admin.html`
-- `medico.html`
-- `paciente.html`
-- `questionario.html`
-- ficha clínica modal com terapêutica, temperaturas e observações FHIR
 
 ## Melhorias Futuras
 
@@ -351,6 +342,4 @@ Os scripts definidos no `package.json` são:
 - `npm test` - executa o teste do motor CARAT
 - `npm run test:postman` - depende de `newman` e de ficheiros que não estão no caminho referenciado atualmente
 
-## Diferenças face ao README anterior
 
-O README anterior estava vazio. Esta versão foi reconstruída a partir do código real e, por isso, corrige a ausência total de documentação, a estrutura do projeto, os endpoints efetivamente existentes, as tabelas reais da base de dados, a integração FHIR disponível e as limitações que o código ainda mostra.
